@@ -1,19 +1,25 @@
-# --- THIS IS THE ONLY LINE THAT CHANGES ---
-# Use the full, official Python image, not the "slim" version
-FROM python:3.9
+# 1. Use an official, lightweight Python runtime as the base image
+FROM python:3.9-slim
 
-# Set the working directory in the container
+# 2. Set the working directory inside the container
 WORKDIR /app
 
-# Copy the requirements file into the container
+# 3. Copy the requirements file into the container
+# This is done first to leverage Docker's build cache. The packages layer
+# will only be rebuilt if you change the requirements.txt file.
 COPY requirements.txt .
 
-# Run installations. This command is kept for maximum reliability.
-RUN apt-get update && apt-get install -y libgl1-mesa-glx libgdal-dev && \
-    pip install --no-cache-dir -r requirements.txt
+# 4. Install the Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of your application code into the container
+# 5. Copy the rest of your application code into the container
+# This includes app.py, the /templates folder, the /static folder, etc.
 COPY . .
 
-# Tell Render what command to run when the container starts
-CMD ["gunicorn", "--bind", "0.0.0.0:10000", "app:app"]
+# 6. Tell Docker the container listens on the port provided by Render
+# The PORT environment variable is automatically set by Render.
+EXPOSE ${PORT}
+
+# 7. Define the command to run the application using Gunicorn
+# This will start the web server, binding to all IPs on the port Render assigns.
+CMD ["gunicorn", "--bind", "0.0.0.0:${PORT}", "app:app"]
