@@ -1,4 +1,3 @@
-<!-- Login Modal -->
 <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -8,27 +7,24 @@
             </div>
             <div class="modal-body">
                 <form id="loginForm">
+                    <div class="alert alert-danger d-none" role="alert"></div>
                     <div class="mb-3">
                         <label for="loginEmail" class="form-label">Email address</label>
-                        <input type="email" class="form-control" id="loginEmail" required>
+                        <input type="email" class="form-control" id="loginEmail" name="email" required>
                     </div>
                     <div class="mb-3">
                         <label for="loginPassword" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="loginPassword" required>
+                        <input type="password" class="form-control" id="loginPassword" name="password" required>
                     </div>
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">Login</button>
                     </div>
                 </form>
-                <div class="text-center mt-3">
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#forgotModal" data-bs-dismiss="modal">Forgot password?</a>
-                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Register Modal -->
 <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -38,21 +34,22 @@
             </div>
             <div class="modal-body">
                 <form id="registerForm">
+                    <div class="alert alert-danger d-none" role="alert"></div>
                     <div class="mb-3">
                         <label for="registerName" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="registerName" required>
+                        <input type="text" class="form-control" id="registerName" name="name" required>
                     </div>
                     <div class="mb-3">
                         <label for="registerEmail" class="form-label">Email address</label>
-                        <input type="email" class="form-control" id="registerEmail" required>
+                        <input type="email" class="form-control" id="registerEmail" name="email" required>
                     </div>
                     <div class="mb-3">
                         <label for="registerPassword" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="registerPassword" required>
+                        <input type="password" class="form-control" id="registerPassword" name="password" required>
                     </div>
                     <div class="mb-3">
                         <label for="registerConfirmPassword" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="registerConfirmPassword" required>
+                        <input type="password" class="form-control" id="registerConfirmPassword" name="confirmPassword" required>
                     </div>
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">Register</button>
@@ -63,8 +60,8 @@
     </div>
 </div>
 
-<!-- Forgot Password Modal -->
 <div class="modal fade" id="forgotModal" tabindex="-1" aria-labelledby="forgotModalLabel" aria-hidden="true">
+    </div>
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">

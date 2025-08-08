@@ -1,22 +1,20 @@
-# 1. Use an official, lightweight Python runtime as the base image
+# Use an official Python runtime as a parent image
 FROM python:3.9-slim
 
-# 2. Set the working directory inside the container
+# Set the working directory in the container
 WORKDIR /app
 
-# 3. Copy the requirements file into the container
+# Copy the requirements file first to leverage Docker cache
 COPY requirements.txt .
 
-# 4. Install the Python dependencies
+# Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 5. Copy the rest of your application code into the container
+# Copy the rest of the application's code into the container
 COPY . .
 
-# 6. Tell Docker the container listens on the port provided by Render
-# The PORT environment variable is automatically set by Render.
-EXPOSE ${PORT}
+# Expose the port Render provides
+EXPOSE 10000
 
-# 7. Define the command to run the application using Gunicorn (SHELL FORM)
-# This version allows the shell to substitute the ${PORT} variable correctly.
-CMD gunicorn --bind 0.0.0.0:${PORT} app:app
+# Define the command to run the application using Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:${PORT}", "app:app"]
