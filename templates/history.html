@@ -1,0 +1,248 @@
+{% extends "layout.html" %}
+
+{% block title %}Historical Data{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-history me-3"></i>Historical Bloom Data</h1>
+            <p class="lead">Explore past algal bloom occurrences and trends</p>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-globe-americas me-2"></i>Global Hotspots</h5>
+                    <div id="historicalMap" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-filter me-2"></i>Filter Data</h5>
+                    <form id="historyFilterForm">
+                        <div class="mb-3">
+                            <label for="regionSelect" class="form-label">Region</label>
+                            <select class="form-select" id="regionSelect">
+                                <option value="all">All Regions</option>
+                                <option value="north_america">North America</option>
+                                <option value="europe">Europe</option>
+                                <option value="asia">Asia</option>
+                                <option value="south_america">South America</option>
+                                <option value="africa">Africa</option>
+                                <option value="oceania">Oceania</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dateRange" class="form-label">Date Range</label>
+                            <input type="text" class="form-control" id="dateRange" placeholder="Select date range">
+                        </div>
+                        <div class="mb-3">
+                            <label for="severitySelect" class="form-label">Severity</label>
+                            <select class="form-select" id="severitySelect" multiple>
+                                <option value="low" selected>Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high" selected>High</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-2"></i>Apply Filters
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>Bloom Trends</h5>
+                    <canvas id="globalTrendChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-table me-2"></i>Historical Records</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="historyTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Location</th>
+                                    <th>Severity</th>
+                                    <th>Area (km²)</th>
+                                    <th>Duration</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <nav aria-label="History pagination">
+                        <ul class="pagination justify-content-center mt-3">
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">Previous</a>
+                            </li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize historical map
+    const historicalMap = L.map('historicalMap').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(historicalMap);
+    
+    // Add historical bloom markers (simulated)
+    const bloomData = [
+        { lat: 42.35, lon: -71.05, date: '2023-07-15', severity: 'high', area: 45.2 },
+        { lat: 34.05, lon: -118.25, date: '2023-08-02', severity: 'medium', area: 32.7 },
+        { lat: 51.51, lon: -0.13, date: '2023-06-28', severity: 'low', area: 12.3 },
+        { lat: 35.68, lon: 139.77, date: '2023-09-10', severity: 'high', area: 67.8 },
+        { lat: -33.87, lon: 151.21, date: '2023-08-22', severity: 'medium', area: 28.4 }
+    ];
+    
+    bloomData.forEach(bloom => {
+        const color = bloom.severity === 'high' ? 'red' : bloom.severity === 'medium' ? 'orange' : 'yellow';
+        const marker = L.circleMarker([bloom.lat, bloom.lon], {
+            radius: Math.sqrt(bloom.area) * 0.8,
+            fillColor: color,
+            color: '#000',
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).addTo(historicalMap);
+        
+        marker.bindPopup(`
+            <b>${bloom.date}</b><br>
+            Severity: <span class="badge bg-${bloom.severity === 'high' ? 'danger' : bloom.severity === 'medium' ? 'warning' : 'info'}">${bloom.severity}</span><br>
+            Area: ${bloom.area} km²
+        `);
+    });
+    
+    // Initialize global trend chart
+    const globalTrendCtx = document.getElementById('globalTrendChart').getContext('2d');
+    const globalTrendChart = new Chart(globalTrendCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [
+                {
+                    label: '2023',
+                    data: [12, 19, 15, 27, 34, 42, 48, 51, 45, 38, 29, 18],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: '2022',
+                    data: [10, 15, 13, 25, 32, 38, 45, 47, 42, 35, 27, 16],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    tension: 0.3,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Global Bloom Occurrences by Month'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Blooms'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Initialize date range picker
+    $('#dateRange').daterangepicker({
+        opens: 'left',
+        locale: {
+            format: 'YYYY-MM-DD'
+        }
+    });
+    
+    // Initialize multi-select
+    $('#severitySelect').select2({
+        placeholder: "Select severities",
+        width: '100%'
+    });
+    
+    // Form submission handler
+    $('#historyFilterForm').on('submit', function(e) {
+        e.preventDefault();
+        // Implement filter logic
+        alert('Filter functionality would be implemented here');
+    });
+    
+    // Load table data (simulated)
+    const tableBody = $('#historyTable tbody');
+    const sampleData = [
+        { date: '2023-07-15', location: 'Boston Harbor, MA', severity: 'High', area: 45.2, duration: '2 weeks' },
+        { date: '2023-08-02', location: 'Santa Monica Bay, CA', severity: 'Medium', area: 32.7, duration: '10 days' },
+        { date: '2023-06-28', location: 'Thames Estuary, UK', severity: 'Low', area: 12.3, duration: '5 days' },
+        { date: '2023-09-10', location: 'Tokyo Bay, Japan', severity: 'High', area: 67.8, duration: '3 weeks' },
+        { date: '2023-08-22', location: 'Sydney Harbour, Australia', severity: 'Medium', area: 28.4, duration: '8 days' }
+    ];
+    
+    sampleData.forEach(item => {
+        const row = `
+            <tr>
+                <td>${item.date}</td>
+                <td>${item.location}</td>
+                <td><span class="badge bg-${item.severity === 'High' ? 'danger' : item.severity === 'Medium' ? 'warning' : 'info'}">${item.severity}</span></td>
+                <td>${item.area}</td>
+                <td>${item.duration}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary"><i class="fas fa-map-marker-alt"></i></button>
+                    <button class="btn btn-sm btn-outline-info"><i class="fas fa-chart-bar"></i></button>
+                </td>
+            </tr>
+        `;
+        tableBody.append(row);
+    });
+</script>
+{% endblock %}

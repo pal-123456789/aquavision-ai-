@@ -1,0 +1,356 @@
+{% extends "layout.html" %}
+
+{% block title %}API Documentation{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-code me-3"></i>AquaVision AI API Documentation</h1>
+            <p class="lead">Integrate algal bloom detection into your applications</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-3">
+            <div class="sticky-top pt-3" style="top: 80px;">
+                <div class="list-group">
+                    <a href="#overview" class="list-group-item list-group-item-action">Overview</a>
+                    <a href="#authentication" class="list-group-item list-group-item-action">Authentication</a>
+                    <a href="#endpoints" class="list-group-item list-group-item-action">Endpoints</a>
+                    <a href="#rate-limiting" class="list-group-item list-group-item-action">Rate Limiting</a>
+                    <a href="#error-codes" class="list-group-item list-group-item-action">Error Codes</a>
+                    <a href="#examples" class="list-group-item list-group-item-action">Examples</a>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="/api-key" class="btn btn-primary w-100">
+                        <i class="fas fa-key me-2"></i>Get API Key
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <section id="overview" class="mb-5">
+                <h2 class="mb-3"><i class="fas fa-info-circle me-2"></i>Overview</h2>
+                <p>The AquaVision AI API provides programmatic access to our algal bloom detection and prediction services. With this API, you can integrate water quality monitoring into your own applications, dashboards, or research projects.</p>
+                
+                <div class="alert alert-info">
+                    <strong>Base URL:</strong> https://aquavision-ai-1.onrender.com/api/v1
+                </div>
+                
+                <p>All API responses are in JSON format. The API follows RESTful conventions and uses standard HTTP response codes.</p>
+            </section>
+            
+            <section id="authentication" class="mb-5">
+                <h2 class="mb-3"><i class="fas fa-user-shield me-2"></i>Authentication</h2>
+                <p>To use the AquaVision AI API, you need an API key. You can obtain one by registering for an account and generating a key in your dashboard.</p>
+                
+                <p>Include your API key in all requests as a header:</p>
+                <pre><code>Authorization: Bearer YOUR_API_KEY</code></pre>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Keep your API key secure! Do not share it or commit it to version control.
+                </div>
+            </section>
+            
+            <section id="endpoints" class="mb-5">
+                <h2 class="mb-3"><i class="fas fa-plug me-2"></i>Endpoints</h2>
+                
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Detect Current Blooms</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <code class="bg-light p-2 rounded">GET /detect</code>
+                            <span class="badge bg-success">Requires API Key</span>
+                        </div>
+                        
+                        <h6>Parameters</h6>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Required</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>lat</td>
+                                    <td>float</td>
+                                    <td>Latitude of location to analyze</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr>
+                                    <td>lon</td>
+                                    <td>float</td>
+                                    <td>Longitude of location to analyze</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr>
+                                    <td>radius</td>
+                                    <td>integer</td>
+                                    <td>Analysis radius in km (default: 10)</td>
+                                    <td>No</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <h6>Response</h6>
+                        <pre><code class="language-json">{
+    "success": true,
+    "image_url": "https://example.com/current.png",
+    "bounds": [[lat1, lon1], [lat2, lon2]],
+    "bloom_coverage": 23.5,
+    "severity": "medium",
+    "timestamp": "2023-11-15T14:30:00Z"
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">Predict Future Hotspots</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <code class="bg-light p-2 rounded">GET /predict</code>
+                            <span class="badge bg-success">Requires API Key</span>
+                        </div>
+                        
+                        <h6>Parameters</h6>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Required</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>lat</td>
+                                    <td>float</td>
+                                    <td>Latitude of location to analyze</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr>
+                                    <td>lon</td>
+                                    <td>float</td>
+                                    <td>Longitude of location to analyze</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr>
+                                    <td>days</td>
+                                    <td>integer</td>
+                                    <td>Prediction horizon in days (default: 7)</td>
+                                    <td>No</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <h6>Response</h6>
+                        <pre><code class="language-json">{
+    "success": true,
+    "image_url": "https://example.com/prediction.png",
+    "bounds": [[lat1, lon1], [lat2, lon2]],
+    "risk_level": "high",
+    "confidence": 0.87,
+    "prediction_date": "2023-11-22T00:00:00Z"
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Get Historical Data</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <code class="bg-light p-2 rounded">GET /history</code>
+                            <span class="badge bg-success">Requires API Key</span>
+                        </div>
+                        
+                        <h6>Parameters</h6>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Required</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>lat</td>
+                                    <td>float</td>
+                                    <td>Latitude of location</td>
+                                    <td>No</td>
+                                </tr>
+                                <tr>
+                                    <td>lon</td>
+                                    <td>float</td>
+                                    <td>Longitude of location</td>
+                                    <td>No</td>
+                                </tr>
+                                <tr>
+                                    <td>start_date</td>
+                                    <td>string</td>
+                                    <td>Start date (YYYY-MM-DD)</td>
+                                    <td>No</td>
+                                </tr>
+                                <tr>
+                                    <td>end_date</td>
+                                    <td>string</td>
+                                    <td>End date (YYYY-MM-DD)</td>
+                                    <td>No</td>
+                                </tr>
+                                <tr>
+                                    <td>limit</td>
+                                    <td>integer</td>
+                                    <td>Max records to return (default: 100)</td>
+                                    <td>No</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <h6>Response</h6>
+                        <pre><code class="language-json">{
+    "success": true,
+    "data": [
+        {
+            "date": "2023-07-15",
+            "location": [42.35, -71.05],
+            "severity": "high",
+            "area_km2": 45.2,
+            "duration_days": 14,
+            "confidence": 0.92
+        },
+        ...
+    ],
+    "count": 25,
+    "total": 142
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="rate-limiting" class="mb-5">
+                <h2 class="mb-3"><i class="fas fa-tachometer-alt me-2"></i>Rate Limiting</h2>
+                <p>API requests are rate limited to prevent abuse and ensure fair usage:</p>
+                <ul>
+                    <li><strong>Free tier:</strong> 100 requests/hour</li>
+                    <li><strong>Basic tier:</strong> 500 requests/hour</li>
+                    <li><strong>Pro tier:</strong> 2000 requests/hour</li>
+                </ul>
+                
+                <p>Rate limit headers are included in responses:</p>
+                <pre><code>X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 97
+X-RateLimit-Reset: 3600</code></pre>
+            </section>
+            
+            <section id="error-codes" class="mb-5">
+                <h2 class="mb-3"><i class="fas fa-exclamation-circle me-2"></i>Error Codes</h2>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Message</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>400</td>
+                            <td>Bad Request</td>
+                            <td>Invalid parameters or missing required fields</td>
+                        </tr>
+                        <tr>
+                            <td>401</td>
+                            <td>Unauthorized</td>
+                            <td>Invalid or missing API key</td>
+                        </tr>
+                        <tr>
+                            <td>403</td>
+                            <td>Forbidden</td>
+                            <td>Insufficient permissions or rate limit exceeded</td>
+                        </tr>
+                        <tr>
+                            <td>404</td>
+                            <td>Not Found</td>
+                            <td>Requested resource not found</td>
+                        </tr>
+                        <tr>
+                            <td>500</td>
+                            <td>Internal Server Error</td>
+                            <td>Server-side error occurred</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+            
+            <section id="examples" class="mb-5">
+                <h2 class="mb-3"><i class="fas fa-code me-2"></i>Examples</h2>
+                
+                <h5 class="mt-4">JavaScript Fetch Example</h5>
+                <pre><code class="language-javascript">const apiKey = 'YOUR_API_KEY';
+const lat = 42.35;
+const lon = -71.05;
+
+fetch(`https://aquavision-ai-1.onrender.com/api/v1/detect?lat=${lat}&lon=${lon}`, {
+    headers: {
+        'Authorization': `Bearer ${apiKey}`
+    }
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        console.log('Bloom coverage:', data.bloom_coverage);
+    } else {
+        console.error('Error:', data.error);
+    }
+})
+.catch(error => console.error('Network error:', error));</code></pre>
+                
+                <h5 class="mt-4">Python Requests Example</h5>
+                <pre><code class="language-python">import requests
+
+api_key = "YOUR_API_KEY"
+url = "https://aquavision-ai-1.onrender.com/api/v1/predict"
+params = {
+    "lat": 42.35,
+    "lon": -71.05,
+    "days": 7
+}
+headers = {
+    "Authorization": f"Bearer {api_key}"
+}
+
+response = requests.get(url, params=params, headers=headers)
+data = response.json()
+
+if data["success"]:
+    print(f"Risk level: {data['risk_level']}")
+else:
+    print(f"Error: {data['error']}")</code></pre>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add syntax highlighting to code examples
+    document.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+    });
+</script>
+{% endblock %}
