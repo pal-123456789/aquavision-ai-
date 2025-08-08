@@ -18,7 +18,6 @@
             cursor: pointer; border: none; border-radius: 5px; color: white;
         }
         #detect-btn { background-color: #007bff; }
-        /* --- NEW STYLE FOR PREDICT BUTTON --- */
         #predict-btn { background-color: #ffc107; color: #333; }
         button:disabled { background-color: #cccccc; cursor: not-allowed; }
         #status { margin-top: 10px; text-align: center; font-style: italic; color: #555; }
@@ -28,7 +27,7 @@
     <div id="map"></div>
     <div class="info-panel">
         <h2>🛰️ AquaVision AI</h2>
-        <p>Detects algal blooms at your location using real NASA satellite data.</p>
+        <p>Detects algal blooms. Your location is found automatically, or you can click anywhere on the map to select a new point.</p>
         <button id="detect-btn" disabled>Detect Current Blooms</button>
         <button id="predict-btn" disabled>Predict Future Hotspots</button>
         <div id="status">Locating you...</div>
@@ -38,13 +37,17 @@
     <script>
         const map = L.map('map');
         const detectBtn = document.getElementById('detect-btn');
-        const predictBtn = document.getElementById('predict-btn'); // Get the new button
+        const predictBtn = document.getElementById('predict-btn');
         const statusDiv = document.getElementById('status');
+        
         let currentOverlay = null;
-        let userLocation = null;
+        let analysisLocation = null; // Renamed from userLocation for clarity
+        let locationMarker = null;   // A variable to hold our marker
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        // --- CHANGED: Satellite Map Layer ---
+        // We are now using Esri's World Imagery layer instead of OpenStreetMap
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
         }).addTo(map);
 
         function setStatus(message) { statusDiv.innerHTML = message; }
@@ -57,63 +60,74 @@
         function addImageOverlay(data) {
             if (currentOverlay) map.removeLayer(currentOverlay);
             currentOverlay = L.imageOverlay(data.image_url, data.bounds).addTo(map);
-            map.fitBounds(data.bounds);
+            // We don't need to fit bounds anymore to allow for free exploration
+            // map.fitBounds(data.bounds); 
         }
 
+        // NEW FUNCTION: To update the marker and location
+        function updateLocation(lat, lon, message) {
+            analysisLocation = { lat, lon };
+            
+            // If a marker already exists, move it. If not, create it.
+            if (locationMarker) {
+                locationMarker.setLatLng([lat, lon]);
+            } else {
+                locationMarker = L.marker([lat, lon]).addTo(map);
+            }
+            locationMarker.bindPopup(message).openPopup();
+            
+            setButtonsState(false); // Enable analysis buttons
+            setStatus("Location selected. Ready to analyze.");
+        }
+
+        // --- Get user's initial location ---
         navigator.geolocation.getCurrentPosition(
             function(position) {
-                userLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
-                map.setView([userLocation.lat, userLocation.lon], 10);
-                L.marker([userLocation.lat, userLocation.lon]).addTo(map).bindPopup("You are here!");
-                setButtonsState(false); // Enable both buttons
-                setStatus("Location found. Ready to analyze.");
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                map.setView([lat, lon], 12); // Zoom in a bit more
+                updateLocation(lat, lon, "Your Location");
             },
             function() {
-                setStatus("Could not get location. Please allow access and refresh.");
+                // If geolocation fails, default to Surat, India
+                const lat = 21.17;
+                const lon = 72.83;
+                map.setView([lat, lon], 12);
+                updateLocation(lat, lon, "Default Location (Surat)");
+                setStatus("Could not get location. Click map to choose.");
             }
         );
 
+        // --- NEW: Event listener for clicking on the map ---
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+            updateLocation(lat, lon, `Selected Point: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+        });
+
+        // --- Button click handlers (no change in logic) ---
         detectBtn.addEventListener('click', () => {
-            if (!userLocation) return;
+            if (!analysisLocation) return;
             setButtonsState(true);
             setStatus("Detecting current blooms...");
-            const url = `/detect?lat=${userLocation.lat}&lon=${userLocation.lon}`;
-
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        addImageOverlay(data);
-                        setStatus("Detection complete!");
-                    } else { setStatus(`Error: ${data.error}`); }
-                    setButtonsState(false);
-                })
-                .catch(err => {
-                    setStatus("A network error occurred.");
-                    setButtonsState(false);
-                });
+            const url = `/detect?lat=${analysisLocation.lat}&lon=${analysisLocation.lon}`;
+            fetch(url).then(res => res.json()).then(data => {
+                if (data.success) { addImageOverlay(data); setStatus("Detection complete!"); } 
+                else { setStatus(`Error: ${data.error}`); }
+                setButtonsState(false);
+            }).catch(err => { setStatus("A network error occurred."); setButtonsState(false); });
         });
         
-        // --- JAVASCRIPT FOR PREDICT BUTTON ---
         predictBtn.addEventListener('click', () => {
-            if (!userLocation) return;
+            if (!analysisLocation) return;
             setButtonsState(true);
             setStatus("Predicting future hotspots...");
-            const url = `/predict?lat=${userLocation.lat}&lon=${userLocation.lon}`; // Call the new endpoint
-
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        addImageOverlay(data);
-                        setStatus("Prediction complete!");
-                    } else { setStatus(`Error: ${data.error}`); }
-                    setButtonsState(false);
-                })
-                .catch(err => {
-                    setStatus("A network error occurred.");
-                    setButtonsState(false);
-                });
+            const url = `/predict?lat=${analysisLocation.lat}&lon=${analysisLocation.lon}`;
+            fetch(url).then(res => res.json()).then(data => {
+                if (data.success) { addImageOverlay(data); setStatus("Prediction complete!"); } 
+                else { setStatus(`Error: ${data.error}`); }
+                setButtonsState(false);
+            }).catch(err => { setStatus("A network error occurred."); setButtonsState(false); });
         });
 
     </script>
