@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AquaVision AI - Real-Time Forecaster</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+        #map { height: 100vh; }
+        .info-panel {
+            position: absolute; top: 10px; right: 10px; z-index: 1000;
+            background: white; padding: 15px; border-radius: 8px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4); width: 250px;
+        }
+        button {
+            width: 100%; padding: 10px; font-size: 16px; margin-top: 10px;
+            cursor: pointer; border: none; border-radius: 5px; color: white;
+        }
+        #detect-btn { background-color: #007bff; }
+        /* --- NEW STYLE FOR PREDICT BUTTON --- */
+        #predict-btn { background-color: #ffc107; color: #333; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #status { margin-top: 10px; text-align: center; font-style: italic; color: #555; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="info-panel">
+        <h2>🛰️ AquaVision AI</h2>
+        <p>Detects algal blooms at your location using real NASA satellite data.</p>
+        <button id="detect-btn" disabled>Detect Current Blooms</button>
+        <button id="predict-btn" disabled>Predict Future Hotspots</button>
+        <div id="status">Locating you...</div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map');
+        const detectBtn = document.getElementById('detect-btn');
+        const predictBtn = document.getElementById('predict-btn'); // Get the new button
+        const statusDiv = document.getElementById('status');
+        let currentOverlay = null;
+        let userLocation = null;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        function setStatus(message) { statusDiv.innerHTML = message; }
+        
+        function setButtonsState(disabled) {
+            detectBtn.disabled = disabled;
+            predictBtn.disabled = disabled;
+        }
+
+        function addImageOverlay(data) {
+            if (currentOverlay) map.removeLayer(currentOverlay);
+            currentOverlay = L.imageOverlay(data.image_url, data.bounds).addTo(map);
+            map.fitBounds(data.bounds);
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                userLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
+                map.setView([userLocation.lat, userLocation.lon], 10);
+                L.marker([userLocation.lat, userLocation.lon]).addTo(map).bindPopup("You are here!");
+                setButtonsState(false); // Enable both buttons
+                setStatus("Location found. Ready to analyze.");
+            },
+            function() {
+                setStatus("Could not get location. Please allow access and refresh.");
+            }
+        );
+
+        detectBtn.addEventListener('click', () => {
+            if (!userLocation) return;
+            setButtonsState(true);
+            setStatus("Detecting current blooms...");
+            const url = `/detect?lat=${userLocation.lat}&lon=${userLocation.lon}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addImageOverlay(data);
+                        setStatus("Detection complete!");
+                    } else { setStatus(`Error: ${data.error}`); }
+                    setButtonsState(false);
+                })
+                .catch(err => {
+                    setStatus("A network error occurred.");
+                    setButtonsState(false);
+                });
+        });
+        
+        // --- JAVASCRIPT FOR PREDICT BUTTON ---
+        predictBtn.addEventListener('click', () => {
+            if (!userLocation) return;
+            setButtonsState(true);
+            setStatus("Predicting future hotspots...");
+            const url = `/predict?lat=${userLocation.lat}&lon=${userLocation.lon}`; // Call the new endpoint
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addImageOverlay(data);
+                        setStatus("Prediction complete!");
+                    } else { setStatus(`Error: ${data.error}`); }
+                    setButtonsState(false);
+                })
+                .catch(err => {
+                    setStatus("A network error occurred.");
+                    setButtonsState(false);
+                });
+        });
+
+    </script>
+</body>
+</html>
