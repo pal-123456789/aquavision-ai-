@@ -1,5 +1,6 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+# --- THIS IS THE ONLY LINE THAT CHANGES ---
+# Use the full, official Python image, not the "slim" version
+FROM python:3.9
 
 # Set the working directory in the container
 WORKDIR /app
@@ -7,8 +8,7 @@ WORKDIR /app
 # Copy the requirements file into the container
 COPY requirements.txt .
 
-# --- THIS IS THE UPDATED LINE ---
-# Install system-level dependencies for OpenCV and RasterIO, then install Python packages
+# Run installations. This command is kept for maximum reliability.
 RUN apt-get update && apt-get install -y libgl1-mesa-glx libgdal-dev && \
     pip install --no-cache-dir -r requirements.txt
 
