@@ -16,5 +16,5 @@ COPY . .
 # Expose the port Render provides
 EXPOSE 10000
 
-# Define the command to run the application using Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:${PORT}", "app:app"]
+# THIS IS THE CORRECTED LINE: Use the "shell" form to run the server
+CMD gunicorn --bind 0.0.0.0:${PORT} app:app
