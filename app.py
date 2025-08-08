@@ -18,6 +18,8 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///aquavision.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+os.makedirs('static', exist_ok=True)
+
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'

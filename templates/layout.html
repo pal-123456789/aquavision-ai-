@@ -85,6 +85,53 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function handleAuthForm(formId, url) {
+                const form = document.getElementById(formId);
+                // Only run if the form exists on the current page
+                if (!form) return;
+                const alertEl = form.querySelector('.alert');
+
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    if (alertEl) alertEl.classList.add('d-none');
+
+                    const formData = new FormData(form);
+                    const data = Object.fromEntries(formData.entries());
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            if (alertEl) {
+                                alertEl.textContent = data.error || 'An unknown error occurred.';
+                                alertEl.classList.remove('d-none');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        if (alertEl) {
+                            alertEl.textContent = 'Network error. Please try again.';
+                            alertEl.classList.remove('d-none');
+                        }
+                    });
+                });
+            }
+
+            handleAuthForm('loginForm', '/login');
+            handleAuthForm('registerForm', '/register');
+        });
+    </script>
+
     {% block scripts %}{% endblock %}
+
 </body>
 </html>
