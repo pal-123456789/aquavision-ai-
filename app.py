@@ -27,7 +27,17 @@ from flask_talisman import Talisman
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Initialize Sentry for error tracking
+SENTRY_ENABLED = False
 if os.environ.get('SENTRY_DSN'):
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        SENTRY_ENABLED = True
+    except ImportError:
+        pass
+
+# Then modify the initialization:
+if SENTRY_ENABLED and os.environ.get('SENTRY_DSN'):
     sentry_sdk.init(
         dsn=os.environ.get('SENTRY_DSN'),
         integrations=[FlaskIntegration()],
