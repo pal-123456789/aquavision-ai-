@@ -4,16 +4,21 @@ FROM python:3.9-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV PORT 10000  # Default port if not specified
-
-# Set the working directory
-WORKDIR /app
+ENV PORT 10000
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     python3-dev \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Redis
+RUN apt-get update && apt-get install -y --no-install-recommends redis-server \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
 
 # Copy requirements and install
 COPY requirements.txt .
@@ -22,11 +27,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application
 COPY . .
 
-# Create static directory
-RUN mkdir -p /app/static
+# Create directories
+RUN mkdir -p /app/static/{css,images,js} \
+    && mkdir -p /app/logs
 
-# Expose the default port (Render will override $PORT)
+# Expose the port
 EXPOSE 10000
 
-# Use PORT from environment variable
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT} app:app"]
+# Start Redis and Gunicorn
+CMD ["sh", "-c", "redis-server --daemonize yes && gunicorn --bind 0.0.0.0:${PORT} --workers 4 --threads 2 --timeout 120 app:app"]

@@ -1,4 +1,5 @@
 # Python temporary files
+.env
 __pycache__/
 *.pyc
 
