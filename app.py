@@ -1,17 +1,15 @@
 import os
+import cv2
+import numpy as np
+import pandas as pd
+from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify, request, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta
 import jwt
-import numpy as np
-from PIL import Image
-import time
-import cv2
-import random
 from itsdangerous import URLSafeTimedSerializer
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -20,30 +18,18 @@ import redis
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
-import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
 from flask_httpauth import HTTPTokenAuth
 from flask_talisman import Talisman
 from werkzeug.middleware.proxy_fix import ProxyFix
-
-# Initialize Sentry for error tracking
-SENTRY_ENABLED = False
-if os.environ.get('SENTRY_DSN'):
-    try:
-        import sentry_sdk
-        from sentry_sdk.integrations.flask import FlaskIntegration
-        SENTRY_ENABLED = True
-    except ImportError:
-        pass
-
-# Then modify the initialization:
-if SENTRY_ENABLED and os.environ.get('SENTRY_DSN'):
-    sentry_sdk.init(
-        dsn=os.environ.get('SENTRY_DSN'),
-        integrations=[FlaskIntegration()],
-        traces_sample_rate=1.0,
-        environment=os.environ.get('FLASK_ENV', 'development')
-    )
+from sklearn.ensemble import RandomForestClassifier
+import joblib
+import rasterio
+import geopandas as gpd
+import folium
+from folium.plugins import HeatMap
+import requests
+from io import BytesIO
+from PIL import Image
 
 # Load environment variables
 load_dotenv()
@@ -65,7 +51,7 @@ Talisman(
             'cdn.jsdelivr.net',
             'unpkg.com',
             'api.maptiler.com',
-            "'unsafe-inline'"  # Needed for Bootstrap tooltips
+            "'unsafe-inline'"
         ],
         'style-src': [
             "'self'",
@@ -81,7 +67,8 @@ Talisman(
         ],
         'connect-src': [
             "'self'",
-            'api.maptiler.com'
+            'api.maptiler.com',
+            'api.nasa.gov'
         ]
     }
 )
@@ -89,7 +76,7 @@ Talisman(
 # Configuration
 app.config.update(
     SECRET_KEY=os.environ.get('SECRET_KEY'),
-    SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL'),
+    SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///instance/aquavision.db'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     SQLALCHEMY_ENGINE_OPTIONS={'pool_pre_ping': True, 'pool_recycle': 300},
     MAIL_SERVER=os.environ.get('MAIL_SERVER'),
@@ -99,14 +86,15 @@ app.config.update(
     MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'),
     MAIL_DEFAULT_SENDER=(os.environ.get('MAIL_DEFAULT_SENDER_NAME', 'AquaVision AI')),
     CACHE_TYPE='RedisCache',
-    CACHE_REDIS_URL=os.environ.get('REDIS_URL'),
+    CACHE_REDIS_URL=os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
     CACHE_DEFAULT_TIMEOUT=300,
-    MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB upload limit
+    MAX_CONTENT_LENGTH=16 * 1024 * 1024,
     UPLOAD_FOLDER=os.path.join('static', 'uploads'),
     ANALYSIS_FOLDER=os.path.join('static', 'analysis'),
     SESSION_COOKIE_SECURE=os.environ.get('FLASK_ENV') == 'production',
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax'
+    SESSION_COOKIE_SAMESITE='Lax',
+    NASA_API_KEY=os.environ.get('NASA_API_KEY', 'DEMO_KEY')
 )
 
 # Initialize extensions
@@ -118,13 +106,13 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'index'
 auth = HTTPTokenAuth(scheme='Bearer')
 
-# Rate limiting configuration
+# Rate limiting
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"],
     storage_uri=app.config['CACHE_REDIS_URL'],
-    strategy="fixed-window"  # More consistent than moving-window
+    strategy="fixed-window"
 )
 
 # Configure logging
@@ -142,6 +130,13 @@ app.logger.info('AquaVision AI startup')
 
 # Password reset serializer
 reset_serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+# Load ML model (simplified example)
+try:
+    BLOOM_MODEL = joblib.load('models/bloom_detector.pkl')
+except:
+    app.logger.warning("No pre-trained model found, using dummy model")
+    BLOOM_MODEL = None
 
 # Database Models
 class User(UserMixin, db.Model):
@@ -220,12 +215,175 @@ def verify_token(token):
     except:
         return None
 
-# API Response Helpers
+# Helper functions
 def success_response(data=None, message=None):
     return jsonify({'success': True, 'data': data, 'message': message})
 
 def error_response(message, status_code=400):
     return jsonify({'success': False, 'error': message}), status_code
+
+def detect_blooms(image_path):
+    """Advanced bloom detection using computer vision"""
+    try:
+        # Load satellite image
+        img = cv2.imread(image_path)
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        
+        # Define color ranges for algal blooms
+        lower_green = np.array([30, 40, 40])
+        upper_green = np.array([90, 255, 255])
+        
+        # Create mask
+        mask = cv2.inRange(hsv, lower_green, upper_green)
+        result = cv2.bitwise_and(img, img, mask=mask)
+        
+        # Calculate coverage percentage
+        total_pixels = mask.size
+        bloom_pixels = np.count_nonzero(mask)
+        coverage = (bloom_pixels / total_pixels) * 100
+        
+        # Determine severity
+        if coverage < 5:
+            severity = "low"
+        elif coverage < 20:
+            severity = "medium"
+        else:
+            severity = "high"
+            
+        return {
+            "coverage": round(coverage, 2),
+            "severity": severity,
+            "mask": mask,
+            "result_image": result
+        }
+    except Exception as e:
+        app.logger.error(f"Error in bloom detection: {str(e)}")
+        return None
+
+def predict_bloom_risk(lat, lon):
+    """Predict future bloom risk using environmental data"""
+    try:
+        # Get weather data (simplified example)
+        weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={app.config['NASA_API_KEY']}"
+        response = requests.get(weather_url)
+        weather_data = response.json()
+        
+        # Get water temperature (mock data)
+        water_temp = 18 + (np.random.random() * 10)  # Simulated data
+        
+        # Predict using model (or simulated logic)
+        if BLOOM_MODEL:
+            features = [[lat, lon, water_temp, weather_data['main']['temp']]]
+            risk = BLOOM_MODEL.predict_proba(features)[0][1]
+        else:
+            # Fallback simulation
+            risk = 0.3 + (water_temp - 15) * 0.02
+        
+        risk = min(max(risk, 0), 1)  # Clamp between 0-1
+        
+        if risk < 0.4:
+            risk_level = "low"
+        elif risk < 0.7:
+            risk_level = "medium"
+        else:
+            risk_level = "high"
+            
+        return {
+            "risk_score": round(risk, 2),
+            "risk_level": risk_level,
+            "water_temp": round(water_temp, 1),
+            "air_temp": round(weather_data['main']['temp'] - 273.15, 1)  # Convert K to C
+        }
+    except Exception as e:
+        app.logger.error(f"Error in bloom prediction: {str(e)}")
+        return None
+
+# API Routes
+@app.route('/api/detect', methods=['POST'])
+@auth.login_required
+def detect_bloom():
+    try:
+        data = request.json
+        lat = float(data.get('lat'))
+        lon = float(data.get('lon'))
+        radius = int(data.get('radius', 10))
+        
+        # Get satellite image (simulated)
+        image_url = f"https://api.nasa.gov/planetary/earth/imagery?lon={lon}&lat={lat}&date=2023-11-01&dim={radius}&api_key={app.config['NASA_API_KEY']}"
+        response = requests.get(image_url)
+        img = Image.open(BytesIO(response.content))
+        
+        # Save and analyze
+        img_path = os.path.join(app.config['UPLOAD_FOLDER'], f"detect_{datetime.now().timestamp()}.jpg")
+        img.save(img_path)
+        
+        analysis = detect_blooms(img_path)
+        if not analysis:
+            return error_response("Analysis failed", 500)
+            
+        # Save result image
+        result_path = os.path.join(app.config['ANALYSIS_FOLDER'], f"result_{datetime.now().timestamp()}.jpg")
+        cv2.imwrite(result_path, analysis['result_image'])
+        
+        # Save to history
+        if current_user.is_authenticated:
+            history = AnalysisHistory(
+                user_id=current_user.id,
+                analysis_type="detection",
+                latitude=lat,
+                longitude=lon,
+                image_url=result_path,
+                result_data=analysis
+            )
+            db.session.add(history)
+            db.session.commit()
+        
+        return success_response({
+            "image_url": url_for('static', filename=f"analysis/{os.path.basename(result_path)}"),
+            "bounds": [[lat-0.1, lon-0.1], [lat+0.1, lon+0.1]],
+            "coverage": analysis['coverage'],
+            "severity": analysis['severity'],
+            "timestamp": datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        app.logger.error(f"API error: {str(e)}")
+        return error_response("Server error", 500)
+
+@app.route('/api/predict', methods=['POST'])
+@auth.login_required
+def predict_bloom():
+    try:
+        data = request.json
+        lat = float(data.get('lat'))
+        lon = float(data.get('lon'))
+        days = int(data.get('days', 7))
+        
+        prediction = predict_bloom_risk(lat, lon)
+        if not prediction:
+            return error_response("Prediction failed", 500)
+            
+        # Save to history
+        if current_user.is_authenticated:
+            history = AnalysisHistory(
+                user_id=current_user.id,
+                analysis_type="prediction",
+                latitude=lat,
+                longitude=lon,
+                result_data=prediction
+            )
+            db.session.add(history)
+            db.session.commit()
+        
+        return success_response({
+            "risk_score": prediction['risk_score'],
+            "risk_level": prediction['risk_level'],
+            "water_temp": prediction['water_temp'],
+            "air_temp": prediction['air_temp'],
+            "prediction_date": (datetime.utcnow() + timedelta(days=days)).isoformat()
+        })
+    except Exception as e:
+        app.logger.error(f"API error: {str(e)}")
+        return error_response("Server error", 500)
 
 # Main App Routes
 @app.route('/')
@@ -235,59 +393,6 @@ def error_response(message, status_code=400):
 def index_spa(token=None):
     return render_template('index.html')
 
-# API Routes
-@app.route('/api/auth/register', methods=['POST'])
-@limiter.limit("5 per hour")
-def register():
-    data = request.get_json()
-    if not data or not all(k in data for k in ['name', 'email', 'password']):
-        return error_response('All fields are required', 400)
-    
-    if User.query.filter_by(email=data['email']).first():
-        return error_response('Email already registered', 400)
-    
-    user = User(name=data['name'], email=data['email'])
-    user.set_password(data['password'])
-    user.generate_api_key()
-    
-    db.session.add(user)
-    db.session.commit()
-    
-    login_user(user)
-    return success_response({
-        'user': {
-            'name': user.name,
-            'email': user.email,
-            'api_key': user.api_key
-        }
-    }, 'Registration successful')
-
-# ... (other routes with similar professional enhancements) ...
-
-# Utility Functions
-def get_dummy_analysis(lat, lon):
-    """Generate more realistic water analysis data"""
-    bounds = [[lat - 0.1, lon - 0.1], [lat + 0.1, lon + 0.1]]
-    
-    # Create base pattern with distance from center
-    x = np.linspace(-1, 1, 512)
-    y = np.linspace(-1, 1, 512)
-    xx, yy = np.meshgrid(x, y)
-    dist = np.sqrt(xx**2 + yy**2)
-    
-    # Create base bloom pattern
-    base = np.exp(-dist*3) * 255  # Exponential falloff from center
-    
-    # Add some random variation
-    noise = np.random.normal(0, 0.2, (512, 512))
-    pattern = np.clip(base * (1 + noise), 0, 255)
-    
-    # Threshold to create binary mask
-    threshold = 0.85 * np.max(pattern)
-    mask_raw = (pattern > threshold).astype(np.uint8) * 255
-    
-    return bounds, mask_raw
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
