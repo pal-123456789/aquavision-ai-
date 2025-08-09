@@ -5,16 +5,13 @@ FROM python:3.9-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV PORT 10000
+ENV FLASK_ENV=production
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
+    build-essential \
     python3-dev \
     libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Redis
-RUN apt-get update && apt-get install -y --no-install-recommends redis-server \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
@@ -27,12 +24,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application
 COPY . .
 
-# Create directories
-RUN mkdir -p /app/static/{css,images,js} \
-    && mkdir -p /app/logs
+# Create necessary directories
+RUN mkdir -p /app/static/{analysis,uploads} \
+    && mkdir -p /app/logs \
+    && chmod -R a+rwx /app/logs \
+    && chmod -R a+rwx /app/static
 
 # Expose the port
-EXPOSE 10000
+EXPOSE $PORT
 
-# Start Redis and Gunicorn
-CMD ["sh", "-c", "redis-server --daemonize yes && gunicorn --bind 0.0.0.0:${PORT} --workers 4 --threads 2 --timeout 120 app:app"]
+# Start the application
+CMD ["gunicorn", "--bind", "0.0.0.0:${PORT}", "--workers", "4", "--threads", "2", "--timeout", "120", "app:app"]
