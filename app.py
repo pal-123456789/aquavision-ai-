@@ -40,7 +40,7 @@ app.config.update(
     MAIL_USERNAME=os.environ.get('MAIL_USERNAME'),
     MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'),
     MAIL_DEFAULT_SENDER=(os.environ.get('MAIL_DEFAULT_SENDER_NAME', 'AquaVision AI'),
-                         os.environ.get('MAIL_DEFAULT_SENDER_EMAIL')),
+                            os.environ.get('MAIL_DEFAULT_SENDER_EMAIL')),
     CACHE_TYPE='RedisCache',
     CACHE_REDIS_URL=os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
     CACHE_DEFAULT_TIMEOUT=300,
@@ -563,8 +563,9 @@ def simulate_prediction(current_mask, days=7):
         predicted[spots] = 255
     
     return predicted
+# Replace the if __name__ == '__main__': block at the end of app.py with:
 
 if __name__ == '__main__':
-    # Run the app
+    # Get port from environment variable or default to 5000
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
