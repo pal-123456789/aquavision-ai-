@@ -114,38 +114,70 @@
 {% endblock %}
 
 {% block scripts %}
-{% block scripts %}
 <script>
-    // Wait for the document to be fully ready
     $(document).ready(function() {
-        // Initialize historical map
+        // Initialize map
         const historicalMap = L.map('historicalMap').setView([20, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(historicalMap);
-
-        // This is the key fix for the "small map" issue.
-        // It tells the map to re-check its size after the page is visible.
-        setTimeout(function() {
-            historicalMap.invalidateSize();
-        }, 100);
-
-        // ... (the rest of your script for markers, charts, and filters remains the same) ...
-        const bloomData = [
-            { lat: 42.35, lon: -71.05, date: '2023-07-15', severity: 'high', area: 45.2 },
-            // ... more data
-        ];
-        bloomData.forEach(bloom => { /* ... marker logic ... */ });
-
-        const globalTrendCtx = document.getElementById('globalTrendChart').getContext('2d');
-        const globalTrendChart = new Chart(globalTrendCtx, { /* ... chart config ... */ });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(historicalMap);
         
-        $('#dateRange').daterangepicker({ /* ... config ... */ });
-        $('#severitySelect').select2({ /* ... config ... */ });
-        $('#historyFilterForm').on('submit', function(e) { /* ... config ... */ });
-        const tableBody = $('#historyTable tbody');
-        const sampleData = [ /* ... sample data ... */ ];
-        sampleData.forEach(item => { /* ... table logic ... */ });
+        // Fix map display
+        setTimeout(() => historicalMap.invalidateSize(), 300);
+
+        // Load data with error handling
+        function loadHistoryData() {
+            fetch('/history-data')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network error');
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.success) throw new Error(data.error || 'Unknown error');
+                    renderCharts(data);
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("Failed to load history data. Please try again.");
+                });
+        }
+
+        function renderCharts(data) {
+            // Chart.js initialization with error boundaries
+            try {
+                new Chart(
+                    document.getElementById('globalTrendChart').getContext('2d'),
+                    {
+                        type: 'line',
+                        data: {
+                            labels: data.trend_labels,
+                            datasets: [{
+                                label: 'Bloom Occurrences',
+                                data: data.trend_data,
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderColor: 'rgba(54, 162, 235, 1)'
+                            }]
+                        }
+                    }
+                );
+            } catch (e) {
+                console.error("Chart error:", e);
+            }
+            
+            // Render timeline
+            const timeline = document.querySelector('.timeline');
+            if (timeline && data.timeline) {
+                timeline.innerHTML = data.timeline.map(item => `
+                    <div class="mb-3 p-2 border rounded">
+                        <strong>${item.date}</strong>
+                        <span class="badge bg-${item.severity === 'High' ? 'danger' : item.severity === 'Medium' ? 'warning' : 'info'}">
+                            ${item.severity}
+                        </span>
+                        <div>${item.description}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        loadHistoryData();
     });
 </script>
 {% endblock %}

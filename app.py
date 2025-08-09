@@ -214,33 +214,27 @@ def history_data():
         lat = request.args.get('lat', type=float)
         lon = request.args.get('lon', type=float)
         
-        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        trend_data = [random.randint(5, 20) for _ in range(12)]
-        severity_labels = ['Low', 'Medium', 'High']
-        severity_data = [random.randint(10, 30), random.randint(5, 20), random.randint(1, 10)]
-        
-        timeline = []
-        for i in range(5):
-            date = f"{random.randint(2020, 2023)}-{random.randint(1, 12):02d}-{random.randint(1, 28):02d}"
-            severity = random.choice(['Low', 'Medium', 'High'])
-            timeline.append({
-                'date': date,
-                'severity': severity,
-                'description': f"Algal bloom detected with {severity.lower()} severity"
-            })
+        # Generate consistent dummy data (no DB required)
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         
         return jsonify({
             'success': True,
             'location_name': f"Lat: {lat:.4f}, Lon: {lon:.4f}" if lat and lon else "Global Data",
             'trend_labels': months,
-            'trend_data': trend_data,
-            'severity_labels': severity_labels,
-            'severity_data': severity_data,
-            'timeline': sorted(timeline, key=lambda x: x['date'], reverse=True)
+            'trend_data': [random.randint(5, 20) for _ in months],
+            'severity_labels': ['Low', 'Medium', 'High'],
+            'severity_data': [random.randint(10,30), random.randint(5,20), random.randint(1,10)],
+            'timeline': sorted([
+                {
+                    'date': f"{random.randint(2020,2023)}-{random.randint(1,12):02d}-{random.randint(1,28):02d}",
+                    'severity': random.choice(['Low','Medium','High']),
+                    'description': f"Bloom detected ({random.choice(['low','moderate','high'])} severity)"
+                } for _ in range(5)
+            ], key=lambda x: x['date'], reverse=True)
         })
     except Exception as e:
-        app.logger.error(f"Error in /history-data: {e}")
-        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 def get_dummy_analysis(lat, lon):
     time.sleep(1)
