@@ -563,7 +563,14 @@ def simulate_prediction(current_mask, days=7):
         predicted[spots] = 255
     
     return predicted
+
+# Add this function at the bottom of app.py, before the "if __name__" block
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('errors/500.html'), 500
+
 # Replace the if __name__ == '__main__': block at the end of app.py with:
+
 
 if __name__ == '__main__':
     # Get port from environment variable or default to 5000
