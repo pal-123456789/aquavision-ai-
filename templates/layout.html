@@ -19,7 +19,7 @@
         .analysis-card { background-color: rgba(255, 255, 255, 0.9); }
         .toast-container { position: fixed; top: 70px; right: 20px; z-index: 1100; }
         @media (max-width: 768px) {
-            .analysis-card { width: 90% !important; }
+            .analysis-card { width: 90% !important; right: 5% !important; }
         }
     </style>
 </head>
@@ -38,12 +38,25 @@
                     <li class="nav-item"><a class="nav-link" href="/api-docs"><i class="fas fa-code me-1"></i>API</a></li>
                 </ul>
                 <div class="d-flex">
-                    <button class="btn btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#loginModal">
-                        <i class="fas fa-sign-in-alt me-1"></i>Login
-                    </button>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registerModal">
-                        <i class="fas fa-user-plus me-1"></i>Register
-                    </button>
+                    {% if current_user.is_authenticated %}
+                        <div class="dropdown">
+                            <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-1"></i>{{ current_user.name }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="/api-key"><i class="fas fa-key me-1"></i>API Key</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt me-1"></i>Logout</a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <button class="btn btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#loginModal">
+                            <i class="fas fa-sign-in-alt me-1"></i>Login
+                        </button>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registerModal">
+                            <i class="fas fa-user-plus me-1"></i>Register
+                        </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -75,7 +88,7 @@
                 </div>
                 <div class="col-md-6 text-md-end">
                     <span class="me-3"><i class="fas fa-envelope me-1"></i>contact@aquavision.ai</span>
-                    <span><i class="fas fa-server me-1"></i>v2.1.0</span>
+                    <span><i class="fas fa-server me-1"></i>v2.2.0</span>
                 </div>
             </div>
         </div>
@@ -88,36 +101,48 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            function handleAuthForm(formId, url) {
+            // Initialize toast
+            const toastEl = document.getElementById('notificationToast');
+            const toast = toastEl ? new bootstrap.Toast(toastEl) : null;
+            
+            function showToast(message) {
+                if (!toastEl || !toast) return;
+                const toastBody = toastEl.querySelector('.toast-body');
+                toastBody.textContent = message;
+                toast.show();
+            }
+
+            // Handle auth forms
+            function handleAuthForm(formId, url, successCallback) {
                 const form = document.getElementById(formId);
-                // Only run if the form exists on the current page
                 if (!form) return;
+                
                 const alertEl = form.querySelector('.alert');
-
-                form.addEventListener('submit', function(event) {
-                    event.preventDefault();
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
                     if (alertEl) alertEl.classList.add('d-none');
-
+                    
                     const formData = new FormData(form);
                     const data = Object.fromEntries(formData.entries());
-
+                    
                     fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
                     })
-                    .then(res => res.json())
+                    .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            if (successCallback) successCallback();
                             window.location.reload();
                         } else {
                             if (alertEl) {
-                                alertEl.textContent = data.error || 'An unknown error occurred.';
+                                alertEl.textContent = data.error || 'An error occurred';
                                 alertEl.classList.remove('d-none');
                             }
                         }
                     })
-                    .catch(err => {
+                    .catch(error => {
                         if (alertEl) {
                             alertEl.textContent = 'Network error. Please try again.';
                             alertEl.classList.remove('d-none');
@@ -125,13 +150,14 @@
                     });
                 });
             }
-
+            
             handleAuthForm('loginForm', '/login');
-            handleAuthForm('registerForm', '/register');
+            handleAuthForm('registerForm', '/register', () => {
+                showToast('Registration successful! Welcome to AquaVision AI');
+            });
         });
     </script>
 
     {% block scripts %}{% endblock %}
-
 </body>
 </html>

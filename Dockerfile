@@ -1,20 +1,33 @@
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim
 
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file first to leverage Docker cache
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file
 COPY requirements.txt .
 
-# Install any needed packages specified in requirements.txt
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application's code into the container
+# Copy the rest of the application
 COPY . .
 
-# Expose the port Render provides
+# Create static directory
+RUN mkdir -p /app/static
+
+# Expose the port
 EXPOSE 10000
 
-# THIS IS THE CORRECTED LINE: Use the "shell" form to run the server
-CMD gunicorn --bind 0.0.0.0:${PORT} app:app
+# Command to run the application
+CMD ["gunicorn", "--bind", "0.0.0.0:${PORT}", "app:app"]

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,22 +9,21 @@ import time
 import cv2
 import os
 import random
-from functools import wraps
 import jwt
+from functools import wraps
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secret-key-for-dev')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///aquavision.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# CRITICAL FIX: Ensure the 'static' directory exists on startup.
+# Ensure static directory exists
 os.makedirs('static', exist_ok=True)
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'index' # Redirect to main page to show login modal
+login_manager.login_view = 'index'
 
-# --- Database Models ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
@@ -45,6 +44,7 @@ class User(UserMixin, db.Model):
             app.config['SECRET_KEY'],
             algorithm='HS256'
         )
+        return self.api_key
 
 class AnalysisHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -62,7 +62,24 @@ with app.app_context():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- Page Routes ---
+# API Key Decorator
+def api_key_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('Authorization', '').replace('Bearer ', '')
+        
+        if not api_key:
+            return jsonify({'success': False, 'error': 'API key required'}), 401
+        
+        try:
+            data = jwt.decode(api_key, app.config['SECRET_KEY'], algorithms=['HS256'])
+            current_user = User.query.get(data['user_id'])
+        except:
+            return jsonify({'success': False, 'error': 'Invalid API key'}), 401
+        
+        return f(current_user, *args, **kwargs)
+    return decorated_function
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -87,13 +104,11 @@ def api_key():
         db.session.commit()
     return render_template('api_key.html', api_key=current_user.api_key)
 
-
-# --- Auth Routes ---
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
     if not data or not data.get('email') or not data.get('password'):
-        return jsonify({'success': False, 'error': 'Missing email or password'}), 400
+        return jsonify({'success': False, 'error': 'Email and password required'}), 400
     
     user = User.query.filter_by(email=data.get('email')).first()
     if user and user.check_password(data.get('password')):
@@ -105,28 +120,23 @@ def login():
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    name = data.get('name')
-    email = data.get('email')
-    password = data.get('password')
-    confirm_password = data.get('confirmPassword')
-    
-    if not all([name, email, password, confirm_password]):
+    if not data or not all([data.get('name'), data.get('email'), data.get('password'), data.get('confirmPassword')]):
         return jsonify({'success': False, 'error': 'All fields are required'}), 400
-        
-    if password != confirm_password:
+    
+    if data.get('password') != data.get('confirmPassword'):
         return jsonify({'success': False, 'error': 'Passwords do not match'}), 400
     
-    if User.query.filter_by(email=email).first():
-        return jsonify({'success': False, 'error': 'Email is already registered'}), 400
+    if User.query.filter_by(email=data.get('email')).first():
+        return jsonify({'success': False, 'error': 'Email already registered'}), 400
     
-    new_user = User(email=email, name=name)
-    new_user.set_password(password)
-    new_user.generate_api_key()
+    user = User(email=data.get('email'), name=data.get('name'))
+    user.set_password(data.get('password'))
+    user.generate_api_key()
     
-    db.session.add(new_user)
+    db.session.add(user)
     db.session.commit()
     
-    login_user(new_user)
+    login_user(user)
     return jsonify({'success': True}), 201
 
 @app.route('/logout')
@@ -135,15 +145,13 @@ def logout():
     logout_user()
     return jsonify({'success': True})
 
-
-# --- Frontend Endpoints (Dummy Data) ---
 @app.route('/detect')
 def detect_algae():
     try:
         lat = request.args.get('lat', type=float)
         lon = request.args.get('lon', type=float)
         if lat is None or lon is None:
-            return jsonify({'success': False, 'error': 'Location not provided.'}), 400
+            return jsonify({'success': False, 'error': 'Latitude and longitude required'}), 400
             
         bounds, mask_raw = get_dummy_analysis(lat, lon)
         
@@ -152,18 +160,20 @@ def detect_algae():
         rgba[mask_raw == 255, 3] = 150
         img = Image.fromarray(rgba)
         timestamp = int(time.time())
-        filename = f'current_algae_{timestamp}.png'
+        filename = f'current_{timestamp}.png'
         output_path = os.path.join('static', filename)
         img.save(output_path)
 
         return jsonify({
             'success': True,
-            'image_url': f'/{output_path}',
-            'bounds': bounds
+            'image_url': f'/static/{filename}',
+            'bounds': bounds,
+            'bloom_coverage': round(random.uniform(5, 50), 1),
+            'severity': random.choice(['low', 'medium', 'high'])
         })
     except Exception as e:
-        app.logger.error(f"ERROR in /detect: {e}")
-        return jsonify({'success': False, 'error': 'An internal error occurred.'}), 500
+        app.logger.error(f"Error in /detect: {e}")
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 @app.route('/predict')
 def predict_algae():
@@ -171,7 +181,7 @@ def predict_algae():
         lat = request.args.get('lat', type=float)
         lon = request.args.get('lon', type=float)
         if lat is None or lon is None:
-            return jsonify({'success': False, 'error': 'Location not provided.'}), 400
+            return jsonify({'success': False, 'error': 'Latitude and longitude required'}), 400
 
         _, current_mask_raw = get_dummy_analysis(lat, lon)
         predicted_mask = simulate_prediction(current_mask_raw)
@@ -183,49 +193,55 @@ def predict_algae():
         rgba[predicted_mask == 255, 3] = 130
         img = Image.fromarray(rgba)
         timestamp = int(time.time())
-        filename = f'predicted_algae_{timestamp}.png'
+        filename = f'predicted_{timestamp}.png'
         output_path = os.path.join('static', filename)
         img.save(output_path)
 
         return jsonify({
             'success': True,
-            'image_url': f'/{output_path}',
-            'bounds': bounds
+            'image_url': f'/static/{filename}',
+            'bounds': bounds,
+            'risk_level': random.choice(['low', 'medium', 'high']),
+            'confidence': round(random.uniform(0.7, 0.95), 2)
         })
     except Exception as e:
-        app.logger.error(f"ERROR in /predict: {e}")
-        return jsonify({'success': False, 'error': 'An internal error occurred.'}), 500
+        app.logger.error(f"Error in /predict: {e}")
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 @app.route('/history-data')
 def history_data():
-    lat = request.args.get('lat', type=float)
-    lon = request.args.get('lon', type=float)
-    
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    trend_data = [random.randint(5, 20) for _ in range(12)]
-    severity_labels = ['Low', 'Medium', 'High']
-    severity_data = [random.randint(10, 30), random.randint(5, 20), random.randint(1, 10)]
-    
-    timeline = []
-    for i in range(5):
-        date = f"{random.randint(2022, 2024)}-{random.randint(1, 12):02d}-{random.randint(1, 28):02d}"
-        severity = random.choice(['Low', 'Medium', 'High'])
-        timeline.append({
-            'date': date, 'severity': severity,
-            'description': f"Algal bloom detected with {severity.lower()} severity"
+    try:
+        lat = request.args.get('lat', type=float)
+        lon = request.args.get('lon', type=float)
+        
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        trend_data = [random.randint(5, 20) for _ in range(12)]
+        severity_labels = ['Low', 'Medium', 'High']
+        severity_data = [random.randint(10, 30), random.randint(5, 20), random.randint(1, 10)]
+        
+        timeline = []
+        for i in range(5):
+            date = f"{random.randint(2020, 2023)}-{random.randint(1, 12):02d}-{random.randint(1, 28):02d}"
+            severity = random.choice(['Low', 'Medium', 'High'])
+            timeline.append({
+                'date': date,
+                'severity': severity,
+                'description': f"Algal bloom detected with {severity.lower()} severity"
+            })
+        
+        return jsonify({
+            'success': True,
+            'location_name': f"Lat: {lat:.4f}, Lon: {lon:.4f}" if lat and lon else "Global Data",
+            'trend_labels': months,
+            'trend_data': trend_data,
+            'severity_labels': severity_labels,
+            'severity_data': severity_data,
+            'timeline': sorted(timeline, key=lambda x: x['date'], reverse=True)
         })
-    
-    return jsonify({
-        'success': True,
-        'location_name': f"Lat: {lat:.4f}, Lon: {lon:.4f}",
-        'trend_labels': months,
-        'trend_data': trend_data,
-        'severity_labels': severity_labels,
-        'severity_data': severity_data,
-        'timeline': sorted(timeline, key=lambda x: x['date'], reverse=True)
-    })
+    except Exception as e:
+        app.logger.error(f"Error in /history-data: {e}")
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
-# --- Utility Functions (Dummy Data) ---
 def get_dummy_analysis(lat, lon):
     time.sleep(1)
     bounds = [[lat - 0.1, lon - 0.1], [lat + 0.1, lon + 0.1]]

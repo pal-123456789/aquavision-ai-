@@ -77,7 +77,8 @@
                 <div class="mt-3">
                     <h6>Historical Timeline</h6>
                     <div class="timeline">
-                        </div>
+                        <!-- Timeline items will be added here -->
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -93,32 +94,31 @@
 
 {% block scripts %}
 <script>
-    // Enhanced Main Map Script
+    // Initialize map and UI elements
     const map = L.map('map', {
         zoomControl: false,
         preferCanvas: true
-    });
+    }).setView([20, 0], 2); // Default view
     
-    // Add zoom control with custom position
-    L.control.zoom({
-        position: 'topright'
-    }).addTo(map);
+    // Add zoom control
+    L.control.zoom({ position: 'topright' }).addTo(map);
 
+    // UI elements
     const detectBtn = document.getElementById('detect-btn');
     const predictBtn = document.getElementById('predict-btn');
     const historyBtn = document.getElementById('history-btn');
     const statusAlert = document.getElementById('status-alert');
-    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'), { keyboard: false, backdrop: 'static' });
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'), { 
+        keyboard: false, 
+        backdrop: 'static' 
+    });
     const loadingText = document.getElementById('loading-text');
     const analysisProgress = document.getElementById('analysisProgress');
-
-    // THIS IS THE LINE THAT WAS FIXED (bootstrap.modal -> bootstrap.Modal)
     const historyModal = new bootstrap.Modal(document.getElementById('historyModal'));
-    
-    const notificationToastEl = document.getElementById('notificationToast');
-    const notificationToast = notificationToastEl ? new bootstrap.Toast(notificationToastEl) : null;
+    const notificationToast = new bootstrap.Toast(document.getElementById('notificationToast'));
     const locationSearch = document.getElementById('locationSearch');
 
+    // Map state variables
     let analysisLocation = null;
     let locationMarker = null;
     let bloomLayer = null;
@@ -127,7 +127,7 @@
     let bloomTrendChart = null;
     let severityChart = null;
 
-    // Base Maps
+    // Base map layers
     const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri'
     });
@@ -146,16 +146,11 @@
         "Street Map": streetMap
     };
 
-    // Overlay Layers
-    const bloomOverlays = {
-        "Current Blooms": bloomLayer,
-        "Predictions": predictionLayer,
-        "Historical Data": historicalLayer
-    };
-
-    // Initialize map with satellite base layer
+    // Initialize with satellite base layer
     satellite.addTo(map);
-    L.control.layers(baseMaps, bloomOverlays, { position: 'bottomright' }).addTo(map);
+    
+    // Add layer control
+    const layerControl = L.control.layers(baseMaps, null, { position: 'bottomright' }).addTo(map);
 
     // Location search autocomplete
     const searchAutoComplete = new autoComplete({
@@ -172,18 +167,6 @@
             },
             keys: ["display_name"],
             cache: true
-        },
-        resultsList: {
-            element: (list, data) => {
-                if (!data.results.length) {
-                    const message = document.createElement("div");
-                    message.setAttribute("class", "no_result");
-                    message.innerHTML = `<span>No results found for "${data.query}"</span>`;
-                    list.prepend(message);
-                }
-            },
-            noResults: true,
-            maxResults: 5,
         },
         resultItem: {
             element: (item, data) => {
@@ -231,10 +214,12 @@
     function updateLocation(lat, lon, message) {
         analysisLocation = { lat, lon };
         
+        // Remove existing marker if any
         if (locationMarker) {
             map.removeLayer(locationMarker);
         }
         
+        // Create new marker with custom icon
         locationMarker = L.marker([lat, lon], {
             icon: L.divIcon({
                 className: 'location-marker',
@@ -244,10 +229,14 @@
             })
         }).addTo(map);
         
+        // Add popup with location info
         locationMarker.bindPopup(`<b>${message}</b><br>Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`).openPopup();
+        
+        // Enable buttons and update status
         setButtonsState(false);
         setStatus(`<i class="fas fa-check-circle me-2"></i>Location selected: ${message}`, "success");
         
+        // Show notification if enabled
         if (document.getElementById('notificationToggle').checked) {
             showNotification(`Monitoring location set: ${message}`);
         }
@@ -257,11 +246,13 @@
     function runAnalysis(endpoint, loadingMessage) {
         if (!analysisLocation) return;
         
+        // Disable buttons and show loading modal
         setButtonsState(true);
         loadingText.innerHTML = loadingMessage;
         analysisProgress.style.width = '0%';
         loadingModal.show();
         
+        // Simulate progress
         let progress = 0;
         const progressInterval = setInterval(() => {
             progress += Math.random() * 10;
@@ -269,10 +260,14 @@
             analysisProgress.style.width = `${progress}%`;
         }, 300);
         
+        // Make API request
         const url = `/${endpoint}?lat=${analysisLocation.lat}&lon=${analysisLocation.lon}`;
         
         fetch(url)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Network response was not ok');
+                return res.json();
+            })
             .then(data => {
                 clearInterval(progressInterval);
                 analysisProgress.style.width = '100%';
@@ -282,9 +277,9 @@
                     if (data.success) {
                         addImageOverlay(data, endpoint);
                         setStatus(`<i class="fas fa-check-circle me-2"></i>${endpoint.charAt(0).toUpperCase() + endpoint.slice(1)} complete!`, 'success');
-                        showNotification(`${endpoint.charAt(0).toUpperCase() + endpoint.slice(1)} analysis completed.`);
+                        showNotification(`${endpoint.charAt(0).toUpperCase() + endpoint.slice(1)} analysis completed for this location`);
                     } else {
-                        setStatus(`<i class="fas fa-exclamation-triangle me-2"></i>Error: ${data.error}`, 'danger');
+                        setStatus(`<i class="fas fa-exclamation-triangle me-2"></i>Error: ${data.error || 'Unknown error'}`, 'danger');
                     }
                     setButtonsState(false);
                 }, 500);
@@ -292,52 +287,59 @@
             .catch(err => {
                 clearInterval(progressInterval);
                 loadingModal.hide();
-                setStatus(`<i class="fas fa-exclamation-triangle me-2"></i>A network error occurred.`, 'danger');
+                setStatus(`<i class="fas fa-exclamation-triangle me-2"></i>Network error: ${err.message}`, 'danger');
                 setButtonsState(false);
             });
     }
 
     // Add image overlay to map
     function addImageOverlay(data, type) {
-        const layerMap = {
-            'detect': { layer: bloomLayer, name: "Current Blooms" },
-            'predict': { layer: predictionLayer, name: "Predictions" }
-        };
-
-        const existingLayerInfo = layerMap[type];
-        if (existingLayerInfo && existingLayerInfo.layer) {
-            map.removeLayer(existingLayerInfo.layer);
+        // Remove existing layer of the same type
+        if (type === 'detect' && bloomLayer) {
+            map.removeLayer(bloomLayer);
+            bloomLayer = null;
+        } else if (type === 'predict' && predictionLayer) {
+            map.removeLayer(predictionLayer);
+            predictionLayer = null;
         }
-
-        const newOverlay = L.imageOverlay(data.image_url, data.bounds, {
+        
+        // Create new overlay
+        const overlay = L.imageOverlay(data.image_url, data.bounds, {
             opacity: 0.7,
             interactive: true
         }).addTo(map);
-
-        if (type === 'detect') bloomLayer = newOverlay;
-        if (type === 'predict') predictionLayer = newOverlay;
-
-        updateLayerControl();
-    }
-    
-    function updateLayerControl() {
-        if (map.layersControl) {
-            map.removeControl(map.layersControl);
+        
+        // Store reference based on type
+        if (type === 'detect') {
+            bloomLayer = overlay;
+        } else if (type === 'predict') {
+            predictionLayer = overlay;
         }
         
+        // Update layer control
+        updateLayerControl();
+    }
+
+    // Update layer control with current layers
+    function updateLayerControl() {
+        // Remove existing control
+        if (map._layersControl) {
+            map.removeControl(map._layersControl);
+        }
+        
+        // Create new overlays object with only active layers
         const activeOverlays = {};
         if (bloomLayer) activeOverlays["Current Blooms"] = bloomLayer;
         if (predictionLayer) activeOverlays["Predictions"] = predictionLayer;
-        if (historicalLayer) activeOverlays["Historical Data"] = historicalLayer;
         
-        map.layersControl = L.control.layers(baseMaps, activeOverlays, { position: 'bottomright' }).addTo(map);
+        // Add new control
+        map._layersControl = L.control.layers(baseMaps, activeOverlays, { position: 'bottomright' }).addTo(map);
     }
 
     // Show notification toast
     function showNotification(message) {
-        if (!notificationToast) return;
         const toastBody = document.querySelector('#notificationToast .toast-body');
-        toastBody.innerHTML = message;
+        toastBody.textContent = message;
         notificationToast.show();
     }
 
@@ -369,12 +371,12 @@
                     displayHistoricalData(data);
                     historyModal.show();
                 } else {
-                    setStatus(`<i class="fas fa-exclamation-triangle me-2"></i>${data.error}`, 'danger');
+                    setStatus(`<i class="fas fa-exclamation-triangle me-2"></i>${data.error || 'Failed to load history'}`, 'danger');
                 }
             })
             .catch(err => {
                 loadingModal.hide();
-                setStatus(`<i class="fas fa-exclamation-triangle me-2"></i>Failed to load history`, 'danger');
+                setStatus(`<i class="fas fa-exclamation-triangle me-2"></i>Network error loading history`, 'danger');
             });
     });
 
@@ -382,55 +384,139 @@
     function displayHistoricalData(data) {
         document.getElementById('historyModalTitle').textContent = `Historical Analysis: ${data.location_name}`;
         
+        // Bloom trend chart
         if (bloomTrendChart) bloomTrendChart.destroy();
         const trendCtx = document.getElementById('bloomTrendChart').getContext('2d');
-        bloomTrendChart = new Chart(trendCtx, { /* ... chart config ... */ });
+        bloomTrendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: data.trend_labels,
+                datasets: [{
+                    label: 'Bloom Occurrences',
+                    data: data.trend_data,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Bloom Frequency Trend'
+                    }
+                }
+            }
+        });
         
+        // Severity chart
         if (severityChart) severityChart.destroy();
         const severityCtx = document.getElementById('severityChart').getContext('2d');
-        severityChart = new Chart(severityCtx, { /* ... chart config ... */ });
+        severityChart = new Chart(severityCtx, {
+            type: 'bar',
+            data: {
+                labels: data.severity_labels,
+                datasets: [{
+                    label: 'Bloom Severity',
+                    data: data.severity_data,
+                    backgroundColor: [
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(255, 99, 132, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Bloom Severity Distribution'
+                    }
+                }
+            }
+        });
         
+        // Timeline
         const timeline = document.querySelector('.timeline');
         timeline.innerHTML = '';
         data.timeline.forEach(item => {
             const timelineItem = document.createElement('div');
             timelineItem.className = 'timeline-item mb-3';
-            timelineItem.innerHTML = `...`; // Dynamic content
+            timelineItem.innerHTML = `
+                <div class="d-flex justify-content-between">
+                    <strong>${item.date}</strong>
+                    <span class="badge bg-${item.severity === 'High' ? 'danger' : item.severity === 'Medium' ? 'warning' : 'info'}">${item.severity}</span>
+                </div>
+                <div>${item.description}</div>
+            `;
             timeline.appendChild(timelineItem);
         });
     }
 
     // Initialize with user location or default
-    navigator.geolocation.getCurrentPosition(
-        pos => {
-            const { latitude: lat, longitude: lon } = pos.coords;
-            map.setView([lat, lon], 12);
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-                .then(response => response.json())
-                .then(data => {
-                    const name = data.display_name || "Your Location";
-                    updateLocation(lat, lon, name);
-                    locationSearch.value = name;
-                })
-                .catch(() => {
-                    updateLocation(lat, lon, "Your Location");
-                    locationSearch.value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-                });
-        },
-        () => {
+    function initializeLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude: lat, longitude: lon } = pos.coords;
+                    map.setView([lat, lon], 12);
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const name = data.display_name || "Your Location";
+                            updateLocation(lat, lon, name);
+                            locationSearch.value = name;
+                        })
+                        .catch(() => {
+                            updateLocation(lat, lon, "Your Location");
+                            locationSearch.value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                        });
+                },
+                () => {
+                    // Fallback to default location if geolocation fails
+                    const lat = 21.17, lon = 72.83; // Surat, India
+                    map.setView([lat, lon], 12);
+                    updateLocation(lat, lon, "Default Location (Surat, India)");
+                    locationSearch.value = "Surat, India";
+                    setStatus(`<i class="fas fa-exclamation-triangle me-2"></i>Could not get your location. Using default.`, "warning");
+                },
+                { timeout: 10000 } // 10 second timeout
+            );
+        } else {
+            // Geolocation not supported
             const lat = 21.17, lon = 72.83; // Surat, India
             map.setView([lat, lon], 12);
             updateLocation(lat, lon, "Default Location (Surat, India)");
             locationSearch.value = "Surat, India";
-            setStatus(`<i class="fas fa-exclamation-triangle me-2"></i>Could not get location. Using default.`, "warning");
+            setStatus(`<i class="fas fa-exclamation-triangle me-2"></i>Geolocation not supported. Using default.`, "warning");
         }
-    );
+    }
+
+    // Fix for map sizing issues
+    function handleMapResize() {
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 100);
+    }
 
     // Event listeners
     detectBtn.addEventListener('click', () => runAnalysis('detect', 'Detecting current algal blooms...'));
     predictBtn.addEventListener('click', () => runAnalysis('predict', 'Predicting future bloom hotspots...'));
     document.getElementById('exportHistoryBtn').addEventListener('click', () => {
-        showNotification('Export functionality is not yet implemented.');
+        showNotification('Export functionality will be available soon!');
     });
+    
+    // Initialize the application
+    initializeLocation();
+    window.addEventListener('resize', handleMapResize);
 </script>
 {% endblock %}

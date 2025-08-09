@@ -1,3 +1,4 @@
+<!-- Login Modal -->
 <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -20,11 +21,15 @@
                         <button type="submit" class="btn btn-primary">Login</button>
                     </div>
                 </form>
+                <div class="text-center mt-3">
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#forgotModal" data-bs-dismiss="modal">Forgot password?</a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Register Modal -->
 <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -45,11 +50,11 @@
                     </div>
                     <div class="mb-3">
                         <label for="registerPassword" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="registerPassword" name="password" required>
+                        <input type="password" class="form-control" id="registerPassword" name="password" required minlength="8">
                     </div>
                     <div class="mb-3">
                         <label for="registerConfirmPassword" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="registerConfirmPassword" name="confirmPassword" required>
+                        <input type="password" class="form-control" id="registerConfirmPassword" name="confirmPassword" required minlength="8">
                     </div>
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">Register</button>
@@ -60,8 +65,8 @@
     </div>
 </div>
 
+<!-- Forgot Password Modal -->
 <div class="modal fade" id="forgotModal" tabindex="-1" aria-labelledby="forgotModalLabel" aria-hidden="true">
-    </div>
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -70,9 +75,10 @@
             </div>
             <div class="modal-body">
                 <form id="forgotForm">
+                    <div class="alert alert-danger d-none" role="alert"></div>
                     <div class="mb-3">
                         <label for="forgotEmail" class="form-label">Email address</label>
-                        <input type="email" class="form-control" id="forgotEmail" required>
+                        <input type="email" class="form-control" id="forgotEmail" name="email" required>
                     </div>
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">Send Reset Link</button>
