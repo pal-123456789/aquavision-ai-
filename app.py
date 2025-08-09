@@ -63,10 +63,10 @@ login_manager.login_view = 'login'
 mail = Mail(app)
 cache = Cache(app)
 limiter = Limiter(
+    get_remote_address,
     app=app,
-    key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"],
-    storage_uri=app.config['CACHE_REDIS_URL']  # Use Redis for rate limiting
+    storage_uri="memory://"  # <-- ADD THIS LINE
 )
 
 # Configure logging
