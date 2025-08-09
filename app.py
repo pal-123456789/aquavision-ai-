@@ -61,7 +61,7 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 mail = Mail(app)
-cache = Cache(app)
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 limiter = Limiter(
     get_remote_address,
     app=app,
