@@ -1,90 +1,36 @@
-<!-- Login Modal -->
-<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="loginModalLabel"><i class="fas fa-sign-in-alt me-2"></i>Login</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="loginForm">
-                    <div class="alert alert-danger d-none" role="alert"></div>
-                    <div class="mb-3">
-                        <label for="loginEmail" class="form-label">Email address</label>
-                        <input type="email" class="form-control" id="loginEmail" name="email" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="loginPassword" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="loginPassword" name="password" required>
-                    </div>
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Login</button>
-                    </div>
-                </form>
-                <div class="text-center mt-3">
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#forgotModal" data-bs-dismiss="modal">Forgot password?</a>
-                </div>
-            </div>
-        </div>
+<div class="modal fade" id="loginModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Login</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <form id="loginForm">
+            <div class="alert alert-danger d-none"></div>
+            <div class="mb-3"><label class="form-label">Email</label><input type="email" class="form-control" name="email" required></div>
+            <div class="mb-3"><label class="form-label">Password</label><input type="password" class="form-control" name="password" required></div>
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+        </form>
+        <div class="text-center mt-3"><a href="#" data-bs-toggle="modal" data-bs-target="#forgotModal" data-bs-dismiss="modal">Forgot password?</a></div>
     </div>
-</div>
+</div></div></div>
 
-<!-- Register Modal -->
-<div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="registerModalLabel"><i class="fas fa-user-plus me-2"></i>Register</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="registerForm">
-                    <div class="alert alert-danger d-none" role="alert"></div>
-                    <div class="mb-3">
-                        <label for="registerName" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="registerName" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="registerEmail" class="form-label">Email address</label>
-                        <input type="email" class="form-control" id="registerEmail" name="email" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="registerPassword" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="registerPassword" name="password" required minlength="8">
-                    </div>
-                    <div class="mb-3">
-                        <label for="registerConfirmPassword" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="registerConfirmPassword" name="confirmPassword" required minlength="8">
-                    </div>
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Register</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+<div class="modal fade" id="registerModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Register</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <form id="registerForm">
+            <div class="alert alert-danger d-none"></div>
+            <div class="mb-3"><label class="form-label">Full Name</label><input type="text" class="form-control" name="name" required></div>
+            <div class="mb-3"><label class="form-label">Email</label><input type="email" class="form-control" name="email" required></div>
+            <div class="mb-3"><label class="form-label">Password</label><input type="password" class="form-control" name="password" required></div>
+            <button type="submit" class="btn btn-primary w-100">Create Account</button>
+        </form>
     </div>
-</div>
+</div></div></div>
 
-<!-- Forgot Password Modal -->
-<div class="modal fade" id="forgotModal" tabindex="-1" aria-labelledby="forgotModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="forgotModalLabel"><i class="fas fa-key me-2"></i>Reset Password</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="forgotForm">
-                    <div class="alert alert-danger d-none" role="alert"></div>
-                    <div class="mb-3">
-                        <label for="forgotEmail" class="form-label">Email address</label>
-                        <input type="email" class="form-control" id="forgotEmail" name="email" required>
-                    </div>
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Send Reset Link</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+<div class="modal fade" id="forgotModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Reset Password</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <form id="forgotPasswordForm">
+            <p>Enter your email and we'll send you a reset link.</p>
+            <div class="mb-3"><label class="form-label">Email</label><input type="email" class="form-control" name="email" required></div>
+            <button type="submit" class="btn btn-primary w-100">Send Reset Link</button>
+        </form>
     </div>
-</div>
+</div></div></div>

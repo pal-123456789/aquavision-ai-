@@ -1,30 +1,25 @@
-# Build stage
-FROM python:3.9-slim as builder
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --user -r requirements.txt
-
-# Runtime stage
+# Use an official, secure Python runtime as a parent image
 FROM python:3.9-slim
 
-WORKDIR /app
-COPY --from=builder /root/.local /root/.local
-COPY . .
-
-ENV PATH=/root/.local/bin:$PATH
+# Set environment variables for production
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV PORT 10000
-ENV FLASK_ENV=production
 
-RUN mkdir -p /app/static/{analysis,uploads} \
-    && mkdir -p /app/logs \
-    && chmod -R a+rwx /app/logs \
-    && chmod -R a+rwx /app/static
+# Set the working directory
+WORKDIR /app
 
-EXPOSE $PORT
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:$PORT/health || exit 1
+# Install system dependencies required for some Python packages
+RUN apt-get update && apt-get install -y --no-install-recommends gcc python3-dev && rm -rf /var/lib/apt/lists/*
 
-CMD gunicorn --bind 0.0.0.0:$PORT --workers 4 --threads 2 --timeout 120 app:app
+# Copy requirements file and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application's code
+COPY . .
+
+# Expose the port Render will use
+EXPOSE 10000
+
+# Run the application using Gunicorn for production
+CMD ["gunicorn", "--bind", "0.0.0.0:${PORT}", "app:app"]
