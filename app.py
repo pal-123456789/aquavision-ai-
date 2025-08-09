@@ -569,6 +569,12 @@ def simulate_prediction(current_mask, days=7):
 def internal_error(error):
     return render_template('errors/500.html'), 500
 
+# In your app.py file
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('errors/404.html'), 404
+
 # Replace the if __name__ == '__main__': block at the end of app.py with:
 
 
