@@ -1,2 +1,12 @@
+FROM node:18
 
-# Top-level Dockerfile isn't used; individual service Dockerfiles exist in server/ and ml_model/
+WORKDIR /app
+
+COPY server/package*.json ./server/
+RUN cd server && npm install
+
+COPY server ./server
+
+WORKDIR /app/server
+EXPOSE 5000
+CMD ["npm", "start"]
