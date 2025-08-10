@@ -24,4 +24,4 @@ RUN mkdir -p /app/instance/uploads && \
     chmod -R a+rwx /app/instance
 
 # Use $PORT environment variable for Render
-CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "wsgi:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT} wsgi:app"]
