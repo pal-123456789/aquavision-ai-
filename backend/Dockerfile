@@ -1,27 +1,39 @@
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV FLASK_APP=wsgi.py
-
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
+    gcc \
     python3-dev \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Install GDAL for geospatial processing
+RUN apt-get update && apt-get install -y \
+    libgdal-dev \
+    && rm -rf /var/lib/apt/lists/*
 
+# Upgrade pip and setuptools
+RUN pip install --upgrade pip setuptools wheel
+
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the application
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p /app/instance/uploads && \
-    mkdir -p /app/instance/analysis && \
-    chmod -R a+rwx /app/instance
+RUN mkdir -p /app/static/uploads /app/static/analysis /app/logs
 
-# Use $PORT environment variable for Render
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT} wsgi:app"]
+# Set environment variables
+ENV FLASK_APP=app.py
+ENV FLASK_ENV=production
+
+# Run the application
+CMD ["gunicorn", "--bind", "0.0.0.0:10000", "--workers", "4", "--timeout", "120", "app:app"]
