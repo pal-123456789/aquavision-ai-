@@ -11,4 +11,8 @@ migrate = Migrate()
 login_manager = LoginManager()
 mail = Mail()
 cache = Cache()
-limiter = Limiter(key_func=get_remote_address)
+# For Redis storage (recommended for production):
+limiter = Limiter(
+    key_func=get_remote_address,
+    storage_uri="redis://localhost:6379/0"  # Use your REDIS_URL from config
+)
