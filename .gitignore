@@ -1,54 +1,12 @@
-# Python
+# Python temporary files
+.env
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-*.pyc
-.env
+
+# Virtual environment folder (if you use one)
 venv/
-env/
+.venv/
 
-# Node
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Docker
-docker-compose.override.yml
-
-# Database
-*.sqlite3
-
-# IDE
-.vscode/
-.idea/
-
-# Build
-build/
-dist/
-*.egg-info/
-
-# Logs
-*.log
-logs/
-
-# Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Mac
+# OS-specific files
 .DS_Store
-
-# Frontend
-frontend/build/
-frontend/.env
-
-# Analysis files
-static/analysis/*
-!static/analysis/.gitkeep
-static/uploads/*
-!static/uploads/.gitkeep
+Thumbs.db

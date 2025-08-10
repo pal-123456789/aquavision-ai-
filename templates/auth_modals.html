@@ -1,0 +1,261 @@
+<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Login to AquaVision</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm" novalidate>
+                    <div class="alert alert-danger d-none" id="loginError"></div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" name="email" required
+                               placeholder="your@email.com">
+                        <div class="invalid-feedback">Please enter a valid email address</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" name="password" required
+                                   placeholder="••••••••" id="loginPassword">
+                            <button class="btn btn-outline-secondary" type="button" id="toggleLoginPassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="invalid-feedback">Please enter your password</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="remember" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                        </div>
+                        <a href="#" class="text-decoration-none" data-bs-toggle="modal" 
+                           data-bs-target="#forgotModal" data-bs-dismiss="modal">
+                            Forgot password?
+                        </a>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 py-2 mb-3">
+                        <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        Login
+                    </button>
+                    
+                    <div class="text-center text-muted">
+                        Don't have an account? 
+                        <a href="#" class="text-decoration-none" data-bs-toggle="modal" 
+                           data-bs-target="#registerModal" data-bs-dismiss="modal">
+                            Sign up
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="registerForm" novalidate>
+                    <div class="alert alert-danger d-none" id="registerError"></div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" name="name" required
+                               placeholder="John Doe">
+                        <div class="invalid-feedback">Please enter your full name</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" name="email" required
+                               placeholder="your@email.com">
+                        <div class="invalid-feedback">Please enter a valid email address</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" name="password" required
+                                   placeholder="••••••••" id="registerPassword">
+                            <button class="btn btn-outline-secondary" type="button" id="toggleRegisterPassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-strength mt-2">
+                            <div class="progress" style="height: 4px;">
+                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted d-block mt-1">Password strength: <span>Weak</span></small>
+                        </div>
+                        <div class="invalid-feedback">Password must be at least 8 characters</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" name="confirm_password" required
+                               placeholder="••••••••">
+                        <div class="invalid-feedback">Passwords must match</div>
+                    </div>
+                    
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" name="terms" id="termsCheck" required>
+                        <label class="form-check-label" for="termsCheck">
+                            I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a>
+                        </label>
+                        <div class="invalid-feedback">You must agree to the terms</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 py-2">
+                        <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        Create Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="forgotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="forgotPasswordForm" novalidate>
+                    <div class="alert alert-danger d-none" id="forgotError"></div>
+                    <div class="alert alert-success d-none" id="forgotSuccess"></div>
+                    
+                    <p class="mb-3">Enter your email address and we'll send you a link to reset your password.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" name="email" required
+                               placeholder="your@email.com">
+                        <div class="invalid-feedback">Please enter a valid email address</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 py-2">
+                        <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        Send Reset Link
+                    </button>
+                    
+                    <div class="text-center mt-3">
+                        <a href="#" class="text-decoration-none" data-bs-toggle="modal" 
+                           data-bs-target="#loginModal" data-bs-dismiss="modal">
+                            Back to login
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="verifyEmailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Verify Your Email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="mb-4">
+                    <i class="fas fa-envelope-circle-check text-primary" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="mb-3">Check your email</h4>
+                <p class="mb-4">We've sent a verification link to <strong id="verifyEmailAddress"></strong>. 
+                Please click the link to verify your email address.</p>
+                <button class="btn btn-outline-primary" id="resendVerification">
+                    <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                    Resend Verification Email
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Password visibility toggle
+    function setupPasswordToggle(inputId, buttonId) {
+        const passwordInput = document.getElementById(inputId);
+        const toggleButton = document.getElementById(buttonId);
+        
+        if (passwordInput && toggleButton) {
+            toggleButton.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                toggleButton.querySelector('i').classList.toggle('fa-eye');
+                toggleButton.querySelector('i').classList.toggle('fa-eye-slash');
+            });
+        }
+    }
+    
+    setupPasswordToggle('loginPassword', 'toggleLoginPassword');
+    setupPasswordToggle('registerPassword', 'toggleRegisterPassword');
+    
+    // Password strength indicator
+    const registerPassword = document.getElementById('registerPassword');
+    if (registerPassword) {
+        registerPassword.addEventListener('input', function() {
+            const strength = calculatePasswordStrength(this.value);
+            const progressBar = this.closest('.mb-3').querySelector('.progress-bar');
+            const strengthText = this.closest('.mb-3').querySelector('.password-strength span');
+            
+            progressBar.style.width = strength.score * 25 + '%';
+            progressBar.className = 'progress-bar bg-' + 
+                (strength.score < 2 ? 'danger' : strength.score < 4 ? 'warning' : 'success');
+            
+            strengthText.textContent = 
+                strength.score < 2 ? 'Weak' : strength.score < 4 ? 'Medium' : 'Strong';
+        });
+    }
+    
+    function calculatePasswordStrength(password) {
+        let score = 0;
+        if (!password) return {score: 0};
+        
+        // Length
+        if (password.length > 10) score += 2;
+        else if (password.length > 7) score += 1;
+        
+        // Complexity
+        if (/[A-Z]/.test(password)) score += 1;
+        if (/[0-9]/.test(password)) score += 1;
+        if (/[^A-Za-z0-9]/.test(password)) score += 1;
+        
+        return {score: Math.min(4, score)};
+    }
+    
+    // Form validation
+    function setupFormValidation(formId) {
+        const form = document.getElementById(formId);
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        }
+    }
+    
+    setupFormValidation('loginForm');
+    setupFormValidation('registerForm');
+    setupFormValidation('forgotPasswordForm');
+});
+</script>

@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h1 class="mb-4">About AquaVision AI</h1>
+            <p class="lead">AquaVision AI is a portfolio project designed to demonstrate a full-stack web application capable of analyzing environmental data.</p>
+            
+            <hr class="my-4">
+
+            <h5>The Mission</h5>
+            <p>The goal of this project is to simulate the detection and prediction of Harmful Algal Blooms (HABs) using publicly available concepts from NASA satellite data. It serves as a proof-of-concept for how modern cloud technologies can be leveraged for environmental monitoring.</p>
+
+            <h5>Technology Stack</h5>
+            <p>This application was built with a range of modern technologies to showcase a complete development and deployment pipeline:</p>
+            <ul>
+                <li><strong>Backend:</strong> Python with the Flask framework.</li>
+                <li><strong>Data Processing:</strong> NumPy, OpenCV, Rasterio, Pandas.</li>
+                <li><strong>Frontend:</strong> HTML, JavaScript, and the Bootstrap 5 framework for a responsive UI.</li>
+                <li><strong>Mapping:</strong> Leaflet.js with Esri World Imagery tiles.</li>
+                <li><strong>Deployment:</strong> The entire application is containerized using Docker and deployed on Render's cloud platform, featuring a full CI/CD pipeline linked to GitHub.</li>
+            </ul>
+
+            <h5>Disclaimer</h5>
+            <p>This is a personal, non-commercial project for educational and demonstration purposes. The data analysis presented is simulated and should not be used for real-world navigation, safety, or decision-making.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
