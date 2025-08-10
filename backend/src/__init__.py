@@ -1,6 +1,8 @@
 from flask import Flask
 from .config import Config
 from .extensions import db, migrate, login_manager, mail, cache, limiter
+# backend/src/__init__.py
+from .app import create_app
 
 def create_app():
     app = Flask(__name__)
