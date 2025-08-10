@@ -1,39 +1,22 @@
-FROM python:3.10-slim
+# Use an official, secure Python runtime as a parent image
+FROM python:3.9-slim
 
+# Set environment variables for production efficiency
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set the working directory inside the container
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    python3-dev \
-    libgl1 \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender1 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install GDAL for geospatial processing
-RUN apt-get update && apt-get install -y \
-    libgdal-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Upgrade pip and setuptools
-RUN pip install --upgrade pip setuptools wheel
-
-# Copy requirements first to leverage Docker cache
+# Copy and install dependencies first to leverage Docker's cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the application
+# Copy the rest of the application's code
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p /app/static/uploads /app/static/analysis /app/logs
+# Expose the port that Render will use to run the service
+EXPOSE 10000
 
-# Set environment variables
-ENV FLASK_APP=app.py
-ENV FLASK_ENV=production
-
-# Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:10000", "--workers", "4", "--timeout", "120", "app:app"]
+# The command to run the application using Gunicorn for production
+CMD ["gunicorn", "--bind", "0.0.0.0:${PORT}", "app:app"]
