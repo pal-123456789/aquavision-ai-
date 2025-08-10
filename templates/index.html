@@ -9,14 +9,17 @@
 </nav>
 
 <div class="content-wrapper" id="main-content">
+    <div class="d-flex justify-content-center align-items-center h-100">
+        <div class="spinner-border text-primary" role="status"></div>
     </div>
+</div>
 
 {% include 'auth_modals.html' %}
 
 <div id="loading-overlay" class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex justify-content-center align-items-center d-none" style="z-index: 1100;">
     <div class="text-center text-white">
         <div class="spinner-border" style="width: 3rem; height: 3rem;"></div>
-        <h4 class="mt-3" id="loading-text">Processing...</h4>
+        <h4 class="mt-3">Processing Analysis...</h4>
     </div>
 </div>
 {% endblock %}
@@ -26,6 +29,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- STATE MANAGEMENT ---
     const state = { currentUser: null, isAuthenticated: false };
+    const mainContent = document.getElementById('main-content');
 
     // --- API HELPER ---
     async function apiRequest(url, options = {}) {
@@ -46,89 +50,54 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="card position-absolute shadow-lg" style="top: 15px; right: 15px; z-index: 1000; width: 350px;">
                         <div class="card-body">
                             <h5 class="card-title"><i class="fas fa-sliders-h me-2"></i>Analysis Controls</h5>
-                            <div id="status-alert" class="alert alert-info" role="alert"><i class="fas fa-map-marker-alt me-2"></i>Locating you...</div>
+                            <div id="status-alert" class="alert alert-info" role="alert"><i class="fas fa-info-circle me-2"></i>Click map to select a location.</div>
                             <div class="d-grid gap-2">
                                 <button id="detect-btn" class="btn btn-primary" disabled><i class="fas fa-search me-2"></i>Detect Blooms</button>
-                                <button id="predict-btn" class="btn btn-warning" disabled><i class="fas fa-chart-line me-2"></i>Predict Hotspots</button>
                             </div>
                         </div>
                     </div>
                 </div>`;
         }
-
         async executeScript() {
             if (!state.isAuthenticated) {
-                document.getElementById('main-content').innerHTML = '<div class="container text-center p-5"><h2>Please log in to use the analysis tools.</h2></div>';
+                mainContent.innerHTML = '<div class="container text-center p-5"><h2>Please log in to use the analysis tools.</h2></div>';
                 return;
             }
-
-            const map = L.map('map');
-            const statusAlert = document.getElementById('status-alert');
+            const map = L.map('map').setView([20, 0], 3);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+            let locationMarker, analysisLocation, overlayLayer;
             const detectBtn = document.getElementById('detect-btn');
-            const predictBtn = document.getElementById('predict-btn');
+            const statusAlert = document.getElementById('status-alert');
             const loadingOverlay = document.getElementById('loading-overlay');
-            const loadingText = document.getElementById('loading-text');
 
-            let locationMarker, analysisLocation, analysisOverlay;
-
-            const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' });
-            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
-            
-            satelliteLayer.addTo(map); // Default to satellite view
-
-            const baseMaps = { "Street": streetLayer, "Satellite": satelliteLayer };
-            L.control.layers(baseMaps).addTo(map);
-
-            const updateLocation = (lat, lon, message) => {
-                analysisLocation = { lat, lon };
+            map.on('click', (e) => {
+                analysisLocation = e.latlng;
                 if (locationMarker) map.removeLayer(locationMarker);
-                locationMarker = L.marker([lat, lon]).addTo(map).bindPopup(message).openPopup();
+                locationMarker = L.marker(e.latlng).addTo(map).bindPopup("Selected Location").openPopup();
                 statusAlert.className = "alert alert-success";
                 statusAlert.innerHTML = `<i class="fas fa-check-circle me-2"></i>Location selected.`;
                 detectBtn.disabled = false;
-                predictBtn.disabled = false;
-            };
+            });
 
-            map.on('click', (e) => updateLocation(e.latlng.lat, e.latlng.lng, "Selected Location"));
-
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const { latitude, longitude } = pos.coords;
-                    map.setView([latitude, longitude], 13);
-                    updateLocation(latitude, longitude, "Your Location");
-                },
-                () => {
-                    map.setView([20, 0], 3);
-                    statusAlert.className = "alert alert-warning";
-                    statusAlert.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Could not get location. Click the map.`;
-                }
-            );
-
-            const runAnalysis = async (endpoint, loadingMessage) => {
+            detectBtn.addEventListener('click', async () => {
                 if (!analysisLocation) return;
-                loadingText.textContent = loadingMessage;
                 loadingOverlay.classList.remove('d-none');
                 try {
-                    const result = await apiRequest(`/api/analysis/${endpoint}?lat=${analysisLocation.lat}&lon=${analysisLocation.lon}`);
+                    const result = await apiRequest(`/api/analysis/detect?lat=${analysisLocation.lat}&lon=${analysisLocation.lng}`);
                     if (result.success) {
-                        if (analysisOverlay) map.removeLayer(analysisOverlay);
-                        analysisOverlay = L.imageOverlay(result.data.image_url, result.data.bounds, { opacity: 0.7 }).addTo(map);
+                        if (overlayLayer) map.removeLayer(overlayLayer);
+                        overlayLayer = L.imageOverlay(result.data.image_url, result.data.bounds, { opacity: 0.7 }).addTo(map);
                         map.fitBounds(result.data.bounds);
                     }
                 } catch (error) {
-                    statusAlert.className = "alert alert-danger";
-                    statusAlert.innerHTML = `<i class="fas fa-times-circle me-2"></i>Analysis failed: ${error.message}`;
+                    alert(`Analysis failed: ${error.message}`);
                 } finally {
                     loadingOverlay.classList.add('d-none');
                 }
-            };
-            
-            detectBtn.addEventListener('click', () => runAnalysis('detect', 'Detecting current blooms...'));
-            // Note: Predict endpoint needs to be added to app.py to work
-            predictBtn.addEventListener('click', () => alert("Predict functionality is coming soon!"));
+            });
         }
     }
-
+    
     // --- AUTHENTICATION MANAGER (Handles Login/Logout UI) ---
     const AuthManager = {
         async init() {
@@ -165,32 +134,30 @@ document.addEventListener('DOMContentLoaded', () => {
         async handleForm(formId, url) {
             const form = document.getElementById(formId);
             const alertEl = form.querySelector('.alert');
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const spinner = submitBtn.querySelector('.spinner-border');
-            const btnText = submitBtn.querySelector('.button-text');
-
             alertEl.classList.add('d-none');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Processing...`;
             submitBtn.disabled = true;
-            spinner.classList.remove('d-none');
-            btnText.textContent = 'Processing...';
 
             try {
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
                 const result = await apiRequest(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(Object.fromEntries(new FormData(form).entries())),
+                    body: JSON.stringify(data),
                 });
                 if (result.success) {
-                    // FIX: Reload the page for a reliable UI update
-                    window.location.reload();
+                    bootstrap.Modal.getInstance(form.closest('.modal')).hide();
+                    this.init(); // Re-initialize the app to update state and UI
                 }
             } catch (error) {
                 alertEl.textContent = error.message;
                 alertEl.classList.remove('d-none');
             } finally {
+                submitBtn.innerHTML = originalBtnText;
                 submitBtn.disabled = false;
-                spinner.classList.add('d-none');
-                btnText.textContent = formId === 'loginForm' ? 'Login' : 'Sign Up';
             }
         },
         setupEventListeners() {
@@ -204,14 +171,14 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         async logout() {
             await apiRequest('/api/auth/logout', { method: 'POST' });
-            window.location.reload(); // Reload for a clean state
+            window.location.reload(); // Simple and reliable way to reset state
         }
     };
-    
+
     // --- ROUTER (Simplified for this project) ---
     const router = async () => {
         const view = new MapView();
-        document.getElementById('main-content').innerHTML = await view.getHtml();
+        mainContent.innerHTML = await view.getHtml();
         await view.executeScript();
     };
 

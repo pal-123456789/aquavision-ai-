@@ -3,14 +3,13 @@ from flask import Flask, render_template, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_caching import Cache
 import numpy as np
 from PIL import Image
 import time
 import cv2
-import random
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from flask_caching import Cache
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -31,7 +30,7 @@ login_manager.login_view = 'index'
 limiter = Limiter(app=app, key_func=get_remote_address, storage_uri="memory://")
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 
-# Ensure static directory exists for saving images
+# Ensure static directory exists
 os.makedirs('static', exist_ok=True)
 
 # --- Database Models ---
@@ -100,7 +99,6 @@ def auth_status():
         return success_response({'isAuthenticated': True, 'user': {'name': current_user.name}})
     return success_response({'isAuthenticated': False})
 
-# --- Dummy Analysis Route ---
 @app.route('/api/analysis/detect')
 @login_required
 def detect_algae():

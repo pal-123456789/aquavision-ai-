@@ -18,5 +18,5 @@ COPY . .
 # Expose the port Render will use
 EXPOSE 10000
 
-# CORRECTED: Use the "shell" form to run Gunicorn, which allows the ${PORT} variable to work
+# CORRECTED: Use the "shell" form to run Gunicorn, allowing the ${PORT} variable to work
 CMD gunicorn --bind 0.0.0.0:${PORT} app:app
