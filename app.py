@@ -1,10 +1,8 @@
 import os
-from flask import Flask, render_template, jsonify, request, url_for
+from flask import Flask, render_template, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta
-import jwt
 import numpy as np
 from PIL import Image
 import time
@@ -19,7 +17,7 @@ app = Flask(__name__)
 
 # Configuration
 app.config.update(
-    SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-secret-key'),
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-secret-key-12345'),
     SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///aquavision.db'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False
 )
@@ -30,7 +28,7 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'index'
 
 # CRITICAL FIX: Configure Limiter and Cache to use memory, NOT Redis
-limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["200 per day", "50 per hour"], storage_uri="memory://")
+limiter = Limiter(app=app, key_func=get_remote_address, storage_uri="memory://")
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 
 # Ensure static directory exists for saving images
@@ -62,7 +60,7 @@ def error_response(message, status_code=400):
 
 # --- Main App Routes ---
 @app.route('/')
-@app.route('/history')
+@app.route('/<path:path>') # Catch-all for SPA routing
 def index_spa(path=None):
     return render_template('index.html')
 
@@ -71,8 +69,6 @@ def index_spa(path=None):
 @limiter.limit("5 per hour")
 def register():
     data = request.get_json()
-    if not data or not all(k in data for k in ['name', 'email', 'password']):
-        return error_response('All fields are required', 400)
     if User.query.filter_by(email=data['email']).first():
         return error_response('Email already registered', 400)
     user = User(name=data['name'], email=data['email'])
@@ -104,40 +100,33 @@ def auth_status():
         return success_response({'isAuthenticated': True, 'user': {'name': current_user.name}})
     return success_response({'isAuthenticated': False})
 
-# --- Dummy Analysis Routes ---
-def get_dummy_analysis(lat, lon):
-    bounds = [[lat - 0.1, lon - 0.1], [lat + 0.1, lon + 0.1]]
-    x = np.linspace(-1, 1, 512); y = np.linspace(-1, 1, 512)
-    xx, yy = np.meshgrid(x, y); dist = np.sqrt(xx**2 + yy**2)
-    base = np.exp(-dist*3) * 255
-    noise = np.random.normal(0, 0.2, (512, 512))
-    pattern = np.clip(base * (1 + noise), 0, 255)
-    threshold = 0.85 * np.max(pattern)
-    mask_raw = (pattern > threshold).astype(np.uint8) * 255
-    return bounds, mask_raw
-
+# --- Dummy Analysis Route ---
 @app.route('/api/analysis/detect')
 @login_required
 def detect_algae():
-    lat = float(request.args.get('lat'))
-    lon = float(request.args.get('lon'))
-    bounds, mask = get_dummy_analysis(lat, lon)
-    rgba = np.zeros((512, 512, 4), dtype=np.uint8)
-    rgba[mask == 255, 0] = 255; rgba[mask == 255, 3] = 150
-    img = Image.fromarray(rgba)
-    filename = f'current_{int(time.time())}.png'
-    output_path = os.path.join('static', filename)
-    img.save(output_path)
-    return success_response({'image_url': f'/{output_path}', 'bounds': bounds})
+    try:
+        lat = float(request.args.get('lat'))
+        lon = float(request.args.get('lon'))
+        bounds = [[lat - 0.1, lon - 0.1], [lat + 0.1, lon + 0.1]]
+        x = np.linspace(-1, 1, 512); y = np.linspace(-1, 1, 512)
+        xx, yy = np.meshgrid(x, y); dist = np.sqrt(xx**2 + yy**2)
+        pattern = np.sin(dist * 12 + np.random.uniform(0, 6)) * np.exp(-dist * 2.5)
+        mask = (pattern > 0.6).astype(np.uint8) * 255
+        rgba = np.zeros((512, 512, 4), dtype=np.uint8)
+        rgba[mask == 255, 0] = 255; rgba[mask == 255, 3] = 150
+        img = Image.fromarray(rgba)
+        filename = f'current_{int(time.time())}.png'
+        output_path = os.path.join('static', filename)
+        img.save(output_path)
+        return success_response({'image_url': f'/{output_path}', 'bounds': bounds})
+    except Exception as e:
+        app.logger.error(f"Analysis error: {e}")
+        return error_response("Analysis failed", 500)
 
 # --- Error Handlers ---
 @app.errorhandler(500)
 def internal_error(error):
     return render_template('errors/500.html'), 500
-
-@app.errorhandler(404)
-def not_found_error(error):
-    return render_template('index.html'), 200 # Let SPA handle 404s
 
 # Create DB tables if they don't exist
 with app.app_context():

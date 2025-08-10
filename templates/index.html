@@ -4,21 +4,11 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
     <div class="container-fluid">
         <a class="navbar-brand" href="/" data-link><i class="fas fa-water me-2"></i>AquaVision AI</a>
-        <div class="collapse navbar-collapse">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="/" data-link>Map</a></li>
-                <li class="nav-item"><a class="nav-link" href="/history" data-link>History</a></li>
-            </ul>
-            <div id="auth-container" class="d-flex align-items-center"></div>
-        </div>
+        <div id="auth-container" class="d-flex align-items-center"></div>
     </div>
 </nav>
 
-<div class="content-wrapper" id="main-content">
-    <div class="d-flex justify-content-center align-items-center h-100">
-        <div class="spinner-border text-primary" role="status"></div>
-    </div>
-</div>
+<div class="content-wrapper" id="main-content"></div>
 
 {% include 'auth_modals.html' %}
 
@@ -33,13 +23,9 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- STATE MANAGEMENT ---
-    const state = {
-        currentUser: null,
-        isAuthenticated: false,
-    };
+    const state = { currentUser: null, isAuthenticated: false };
+    const mainContent = document.getElementById('main-content');
 
-    // --- API HELPER ---
     async function apiRequest(url, options = {}) {
         const response = await fetch(url, options);
         if (!response.ok) {
@@ -49,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return response.json();
     }
 
-    // --- VIEWS ---
     class AbstractView {
         async getHtml() { return ""; }
         async executeScript() {}
@@ -73,12 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         async executeScript() {
             if (!state.isAuthenticated) {
-                document.getElementById('main-content').innerHTML = '<div class="container text-center p-5"><h2>Please log in to use the analysis tools.</h2></div>';
+                mainContent.innerHTML = '<div class="container text-center p-5"><h2>Please log in to use the analysis tools.</h2></div>';
                 return;
             }
             const map = L.map('map').setView([20, 0], 3);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
-            let locationMarker = null, analysisLocation = null, overlayLayer = null;
+            let locationMarker, analysisLocation, overlayLayer;
             const detectBtn = document.getElementById('detect-btn');
             const statusAlert = document.getElementById('status-alert');
             const loadingOverlay = document.getElementById('loading-overlay');
@@ -96,11 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!analysisLocation) return;
                 loadingOverlay.classList.remove('d-none');
                 try {
-                    const data = await apiRequest(`/api/analysis/detect?lat=${analysisLocation.lat}&lon=${analysisLocation.lng}`);
-                    if (data.success) {
+                    const result = await apiRequest(`/api/analysis/detect?lat=${analysisLocation.lat}&lon=${analysisLocation.lng}`);
+                    if (result.success) {
                         if (overlayLayer) map.removeLayer(overlayLayer);
-                        overlayLayer = L.imageOverlay(data.data.image_url, data.data.bounds, { opacity: 0.7 }).addTo(map);
-                        map.fitBounds(data.data.bounds);
+                        overlayLayer = L.imageOverlay(result.data.image_url, result.data.bounds, { opacity: 0.7 }).addTo(map);
+                        map.fitBounds(result.data.bounds);
                     }
                 } catch (error) {
                     alert(`Analysis failed: ${error.message}`);
@@ -111,28 +96,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    class HistoryView extends AbstractView {
-        async getHtml() {
-            return `<div class="container my-4"><h2><i class="fas fa-history me-2"></i>Analysis History is not yet implemented.</h2></div>`;
-        }
-    }
-
-    // --- ROUTER ---
-    const router = async () => {
-        const routes = [{ path: "/", view: MapView }, { path: "/history", view: HistoryView }];
-        const match = routes.find(route => location.pathname === route.path) || routes[0];
-        const view = new match.view();
-        document.getElementById('main-content').innerHTML = await view.getHtml();
-        await view.executeScript();
-    };
-
-    // --- AUTHENTICATION MANAGER ---
     const AuthManager = {
         async init() {
             try {
-                const data = await apiRequest('/api/auth/status');
-                state.isAuthenticated = data.data.isAuthenticated;
-                state.currentUser = data.data.user;
+                const result = await apiRequest('/api/auth/status');
+                state.isAuthenticated = result.data.isAuthenticated;
+                state.currentUser = result.data.user;
             } catch {
                 state.isAuthenticated = false;
                 state.currentUser = null;
@@ -147,10 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.innerHTML = `
                     <div class="dropdown">
                         <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle me-1"></i> ${state.currentUser.name}
+                           <i class="fas fa-user-circle me-1"></i> ${state.currentUser.name}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#" id="logout-btn"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                            <li><a class="dropdown-item" href="#" id="logout-btn">Logout</a></li>
                         </ul>
                     </div>`;
             } else {
@@ -162,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         async handleForm(formId, url) {
             const form = document.getElementById(formId);
             const alertEl = form.querySelector('.alert');
+            alertEl.classList.add('d-none');
             try {
                 const formData = new FormData(form);
                 const data = Object.fromEntries(formData.entries());
@@ -186,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             document.body.addEventListener('click', e => {
                 if (e.target.id === 'logout-btn') { e.preventDefault(); this.logout(); }
-                if (e.target.matches('[data-link]')) { e.preventDefault(); navigateTo(e.target.href); }
             });
         },
         async logout() {
@@ -195,7 +164,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.addEventListener('popstate', router);
+    const router = async () => {
+        const view = new MapView();
+        mainContent.innerHTML = await view.getHtml();
+        await view.executeScript();
+    };
+
     AuthManager.init();
 });
 </script>
