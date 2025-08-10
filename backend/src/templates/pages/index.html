@@ -1,0 +1,118 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Water Analysis Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Water Analysis Map</h2>
+            </div>
+            <div class="card-body p-0">
+                <div id="map" class="map-container"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Analysis Controls</h2>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Analysis Type</label>
+                    <select class="form-select" id="analysisType">
+                        <option value="detect">Detect Current Algae</option>
+                        <option value="predict">Predict Future Spread</option>
+                    </select>
+                </div>
+                <button id="analyzeBtn" class="btn btn-primary w-100">
+                    Analyze Water Quality
+                </button>
+                <div id="locationInfo" class="mt-3 d-none">
+                    <p class="mb-1">Selected Location:</p>
+                    <p id="coordinates" class="text-muted mb-0"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Latest Results</h2>
+            </div>
+            <div class="card-body">
+                <div id="resultsContainer">
+                    <p class="text-center text-muted py-4">Perform an analysis to see results</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialize map
+    const map = L.map('map').setView([20.5937, 78.9629], 5);
+    
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Add marker
+    let marker = null;
+    
+    map.on('click', function(e) {
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        
+        marker = L.marker(e.latlng).addTo(map);
+        document.getElementById('locationInfo').classList.remove('d-none');
+        document.getElementById('coordinates').textContent = 
+            `Lat: ${e.latlng.lat.toFixed(4)}, Lng: ${e.latlng.lng.toFixed(4)}`;
+    });
+    
+    // Analysis button handler
+    document.getElementById('analyzeBtn').addEventListener('click', async function() {
+        if (!marker) {
+            alert('Please select a location on the map');
+            return;
+        }
+        
+        const analysisType = document.getElementById('analysisType').value;
+        const coords = marker.getLatLng();
+        
+        try {
+            const response = await fetch(`/api/analysis/${analysisType}?lat=${coords.lat}&lon=${coords.lng}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                // Display results
+                const resultsContainer = document.getElementById('resultsContainer');
+                resultsContainer.innerHTML = `
+                    <div class="card result-card">
+                        <img src="${data.image_url}" class="card-img-top" alt="Analysis Result">
+                        <div class="card-body">
+                            <h5 class="card-title">${analysisType === 'detect' ? 'Detection' : 'Prediction'} Result</h5>
+                            <p class="card-text">
+                                Coverage: ${data.coverage}%<br>
+                                Severity: <span class="badge bg-${data.severity === 'high' ? 'danger' : data.severity === 'medium' ? 'warning' : 'success'}">${data.severity}</span>
+                            </p>
+                            <a href="#" class="btn btn-sm btn-outline-primary">View Details</a>
+                        </div>
+                    </div>
+                `;
+            } else {
+                alert('Analysis failed: ' + (data.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Analysis request failed');
+        }
+    });
+</script>
+{% endblock %}

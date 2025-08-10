@@ -1,0 +1,81 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}About AquaVision AI{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">About AquaVision AI</h2>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="AquaVision AI" width="200">
+                </div>
+                
+                <p class="lead">
+                    AquaVision AI is an advanced water quality analysis platform that leverages artificial intelligence 
+                    to detect and predict algae blooms in water bodies.
+                </p>
+                
+                <h3>Our Mission</h3>
+                <p>
+                    Our mission is to provide actionable insights for environmental conservation and water resource 
+                    management. By using cutting-edge technology, we aim to help communities, researchers, and 
+                    government agencies monitor and protect water resources more effectively.
+                </p>
+                
+                <h3>How It Works</h3>
+                <p>
+                    Using satellite imagery and machine learning algorithms, AquaVision AI can:
+                </p>
+                <ul>
+                    <li>Detect current algae concentrations in water bodies</li>
+                    <li>Predict future algae bloom development</li>
+                    <li>Provide historical analysis and trends</li>
+                    <li>Generate detailed reports and visualizations</li>
+                </ul>
+                
+                <h3>Our Technology</h3>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Machine Learning</h5>
+                                <p class="card-text">
+                                    Advanced neural networks trained on thousands of water samples
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Satellite Imagery</h5>
+                                <p class="card-text">
+                                    High-resolution satellite data from multiple sources
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Geospatial Analysis</h5>
+                                <p class="card-text">
+                                    Precise location-based analysis and visualization
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <a href="/" class="btn btn-primary btn-lg">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
