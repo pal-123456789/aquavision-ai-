@@ -1,0 +1,17 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-Migrate
+Flask-Mail
+Werkzeug
+gunicorn
+numpy
+Pillow
+opencv-python-headless
+PyJWT
+python-dotenv
+itsdangerous
+Flask-Limiter
+Flask-Caching
+sentry-sdk[flask]
+Flask-Talisman
