@@ -8,22 +8,15 @@ ENV PYTHONUNBUFFERED 1
 # Set the working directory inside the container
 WORKDIR /app
 
-# MODIFICATION: Install system dependencies required for geospatial libraries
-# The 'rasterio' and 'geopandas' packages need the GDAL library to be installed.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgdal-dev \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy and install Python dependencies first to leverage Docker's cache
+# Copy and install dependencies first to leverage Docker's cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application's code, including the machine learning model
+# Copy the rest of the application's code
 COPY . .
 
 # Expose the port that Render will use to run the service
 EXPOSE 10000
 
-# The command to run the application using Gunicorn for production
-CMD ["gunicorn", "--bind", "0.0.0.0:${PORT}", "app:app"]
+# CORRECTED: Use the "shell" form to run Gunicorn, which allows the ${PORT} variable to work
+CMD gunicorn --bind 0.0.0.0:${PORT} app:app
