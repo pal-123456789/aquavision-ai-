@@ -63,6 +63,10 @@ def index():
     # This route serves your main index.html file
     return render_template('index.html')
 
+@app.route('/solar-system')
+def solar_system():
+    return render_template('index1.html')
+
 # --- API Routes for Login/Registration ---
 @app.route('/api/auth/register', methods=['POST'])
 def register():

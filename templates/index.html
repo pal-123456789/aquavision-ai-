@@ -5,14 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NASA Styled Front Page</title>
-    <link rel="stylesheet" href="./static/css/styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 
 <body>
 
     <section id="website-link">
         <div class="link">
-            <a id="button" href="./templates/index1.html" class="button">3D Solar System</a>
+            <a id="button" href="templates/index1.html" class="button">3D Solar System</a>
         </div>
     </section>
 
