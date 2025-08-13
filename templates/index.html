@@ -12,14 +12,14 @@
 
     <section id="website-link">
         <div class="link">
-            <a id="button" href="templates/index1.html" class="button">3D Solar System</a>
+            <a id="button" href="{{ url_for('solar_system') }}" class="button">3D Solar System</a>
         </div>
     </section>
 
     <section id="planets">
         <div class="planet-section">
             <div class="planet-display">
-                <img id="planet-image" src="m.jpeg" alt="Mercury">
+                <img id="planet-image" src="{{ url_for('static', filename='images/m.jpeg') }}" alt="Mercury">
             </div>
 
             <div class="planet-info">
@@ -63,8 +63,8 @@
             </div>
         </div>
     </section>
-
-    <script src="./static/js/script.js"></script>
+    
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 
 </html>
