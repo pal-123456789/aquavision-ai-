@@ -61,7 +61,7 @@ def error_response(message, status_code=400):
 @app.route('/')
 def index():
     # This route serves your main index.html file
-    return render_template('index.html')
+    return render_template('./templates/index.html')
 
 # --- API Routes for Login/Registration ---
 @app.route('/api/auth/register', methods=['POST'])
