@@ -1,7 +1,7 @@
-import * as THREE from "three";
 import { OrbitControls } from 'jsm/controls/OrbitControls.js';
-import getStarfield from "./src/getStarfield.js";
+import * as THREE from "three";
 import { getFresnelMat } from "./src/getFresnelMat.js";
+import getStarfield from "./src/getStarfield.js";
 const w = window.innerWidth;
 const h = window.innerHeight;
 const scene = new THREE.Scene();
@@ -35,9 +35,9 @@ const detail = 12;
 
 const earthGeometry = new THREE.IcosahedronGeometry(1, detail);
 const earthMaterial = new THREE.MeshPhongMaterial({
-  map: loader.load("./textures/00_earthmap1k.jpg"),
-  specularMap: loader.load("./textures/02_earthspec1k.jpg"),
-  bumpMap: loader.load("./textures/01_earthbump1k.jpg"),
+  map: loader.load("/textures/00_earthmap1k.jpg"),
+  specularMap: loader.load("/textures/02_earthspec1k.jpg"),
+  bumpMap: loader.load("/textures/01_earthbump1k.jpg"),
   bumpScale: 0.04,
 });
 const earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
@@ -45,18 +45,18 @@ earthGroup.add(earthMesh);
 objects.push(earthMesh); // Add Earth to the clickable objects
 
 const lightsMat = new THREE.MeshBasicMaterial({
-  map: loader.load("./textures/03_earthlights1k.jpg"),
+  map: loader.load("/textures/03_earthlights1k.jpg"),
   blending: THREE.AdditiveBlending,
 });
 const lightsMesh = new THREE.Mesh(earthGeometry, lightsMat);
 earthGroup.add(lightsMesh);
 
 const cloudsMat = new THREE.MeshStandardMaterial({
-  map: loader.load("./textures/04_earthcloudmap.jpg"),
+  map: loader.load("/textures/04_earthcloudmap.jpg"),
   transparent: true,
   opacity: 0.8,
   blending: THREE.AdditiveBlending,
-  alphaMap: loader.load('./textures/05_earthcloudmaptrans.jpg'),
+  alphaMap: loader.load('/textures/05_earthcloudmaptrans.jpg'),
 });
 const cloudsMesh = new THREE.Mesh(earthGeometry, cloudsMat);
 cloudsMesh.scale.setScalar(1.003);
@@ -78,7 +78,7 @@ scene.add(sunLight);
 
 // Sun
 const sunGeometry = new THREE.SphereGeometry(2, 32, 32);
-const sunTexture = loader.load("./textures/sun_texture.jpg");
+const sunTexture = loader.load("/textures/sun_texture.jpg");
 const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture });
 const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
 sunMesh.position.set(0, 0, 0);
@@ -91,7 +91,7 @@ earthGroup.add(moonOrbit);
 
 const moonGeometry = new THREE.SphereGeometry(0.27, 32, 32);
 const moonMaterial = new THREE.MeshPhongMaterial({
-  map: loader.load("./textures/moon_texture.jpg"),
+  map: loader.load("/textures/moon_texture.jpg"),
 });
 const moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
 moonMesh.position.set(1.5, 0, 0); // Positioning Moon relative to Earth
@@ -103,7 +103,7 @@ const marsOrbit = new THREE.Group();
 const marsGroup = new THREE.Group();
 scene.add(marsGroup);
 const marsGeometry = new THREE.SphereGeometry(0.6, 32, 32);
-const marsTexture = loader.load("./textures/mars_texture.jpeg");
+const marsTexture = loader.load("/textures/mars_texture.jpeg");
 const marsMaterial = new THREE.MeshPhongMaterial({
   map: marsTexture,
 });
@@ -115,11 +115,11 @@ objects.push(marsMesh); // Add Mars to the clickable objects
 
 // Mars Clouds Layer
 const marsCloudsMat = new THREE.MeshStandardMaterial({
-  map: loader.load("./textures/marsCloudmap.jpeg"),
+  map: loader.load("/textures/marsCloudmap.jpeg"),
   transparent: true,
   opacity: 0.6,
   blending: THREE.AdditiveBlending,
-  alphaMap: loader.load('./textures/marsCloudmaptrans.jpg'),
+  alphaMap: loader.load('/textures/marsCloudmaptrans.jpg'),
 });
 const marsCloudsMesh = new THREE.Mesh(marsGeometry, marsCloudsMat);
 marsCloudsMesh.scale.setScalar(1.01);
@@ -130,7 +130,7 @@ const venusGroup = new THREE.Group();
 scene.add(venusGroup);
 
 const venusGeometry = new THREE.SphereGeometry(0.6, 32, 32);
-const venusTexture = loader.load("./textures/venus_texture.jpeg");
+const venusTexture = loader.load("/textures/venus_texture.jpeg");
 const venusMaterial = new THREE.MeshPhongMaterial({
   map: venusTexture,
 });
@@ -141,11 +141,11 @@ objects.push(venusMesh); // Add Venus to the clickable objects
 
 // Venus Cloud
 const venusCloudsMat = new THREE.MeshStandardMaterial({
-  map: loader.load("./textures/venus_cloudtrans.jpg"),
+  map: loader.load("/textures/venus_cloudtrans.jpg"),
   transparent: true,
   opacity: 0.6,
   blending: THREE.AdditiveBlending,
-  alphaMap: loader.load('./textures/venus_cloud.jpg'),
+  alphaMap: loader.load('/textures/venus_cloud.jpg'),
 });
 const venusCloudsMesh = new THREE.Mesh(venusGeometry, venusCloudsMat);
 venusCloudsMesh.scale.setScalar(1.01);
@@ -156,7 +156,7 @@ const jupiterGroup = new THREE.Group();
 scene.add(jupiterGroup);
 
 const jupiterGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-const jupiterTexture = loader.load("./textures/jupiter_texture.jpeg");
+const jupiterTexture = loader.load("/textures/jupiter_texture.jpeg");
 const jupiterMaterial = new THREE.MeshPhongMaterial({
   map: jupiterTexture,
 });
@@ -168,7 +168,7 @@ objects.push(jupiterMesh); // Add Jupiter to the clickable objects
 // Mercury
 const mercuryGroup= new THREE.Group();
 scene.add(mercuryGroup);
-const mercuryTexture = loader.load("./textures/mercury_tecture.jpg");
+const mercuryTexture = loader.load("/textures/mercury_tecture.jpg");
 const mercuryMaterial = new THREE.MeshPhongMaterial({
   map: mercuryTexture,
 });
@@ -183,7 +183,7 @@ objects.push(mercuryMesh);
 const saturnGroup = new THREE.Group();
 scene.add(saturnGroup);
 const saturnGeometry = new THREE.SphereGeometry(1, 32, 32);
-const saturnTexture = loader.load("./textures/saturnmap.jpg");
+const saturnTexture = loader.load("/textures/saturnmap.jpg");
 const saturnMaterial = new THREE.MeshPhongMaterial({
   map: saturnTexture,
 });
@@ -194,7 +194,7 @@ objects.push(saturnMesh); // Add Saturn to the clickable objects
 
 // Saturn Rings
 const ringGeometry = new THREE.RingGeometry(1.3, 1.6, 32);
-const ringTexture = loader.load("./textures/saturnringcolor.jpg"); // Use a texture with transparency
+const ringTexture = loader.load("/textures/saturnringcolor.jpg"); // Use a texture with transparency
 const ringMaterial = new THREE.MeshBasicMaterial({
   map: ringTexture,
   side: THREE.DoubleSide,
@@ -211,7 +211,7 @@ const uranusGroup = new THREE.Group();
 scene.add(uranusGroup);
 
 const uranusGeometry = new THREE.SphereGeometry(1, 32, 32); // Size and detail of the sphere
-const uranusTexture = loader.load("./textures/uranusmap.jpg"); // Load the Uranus texture
+const uranusTexture = loader.load("/textures/uranusmap.jpg"); // Load the Uranus texture
 const uranusMaterial = new THREE.MeshPhongMaterial({
   map: uranusTexture,
 });
@@ -222,7 +222,7 @@ objects.push(uranusMesh); // Add Uranus to the clickable objects
 
 // Uranus Rings
 const uranusRingGeometry = new THREE.RingGeometry(1.1, 1.2, 32);
-const uranusRingTexture = loader.load("./textures/uranusring.jpg"); // Use a ring texture
+const uranusRingTexture = loader.load("/textures/uranusring.jpg"); // Use a ring texture
 const uranusRingMaterial = new THREE.MeshBasicMaterial({
   map: uranusRingTexture,
   side: THREE.DoubleSide,
@@ -240,7 +240,7 @@ scene.add(asteroidBeltGroup);
 
 // Thinner Asteroid Belt
 const asteroidBeltGeometry = new THREE.RingGeometry(30, 29.8, 64); // Smaller difference between inner and outer radii
-const asteroidBeltTexture = loader.load("./textures/asteroid_belt_texture.jpeg"); // Use an asteroid belt texture
+const asteroidBeltTexture = loader.load("/textures/asteroid_belt_texture.jpeg"); // Use an asteroid belt texture
 const asteroidBeltMaterial = new THREE.MeshBasicMaterial({
   map: asteroidBeltTexture,
   side: THREE.DoubleSide,
